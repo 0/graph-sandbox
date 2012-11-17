@@ -7,7 +7,7 @@ var current_tool;
 var button_color_inactive = new HsbColor(250, 0.6, 0.45);
 var button_color_active = new HsbColor(120, 0.6, 0.45);
 
-var button_size = new Size(150, 40);
+var button_size = new Size(170, 40);
 var button_corners = new Size(5, 5);
 var button_text_offset = new Point(10, 25);
 var button_hotkey_offset = new Point(button_size.width - 30, 25);
@@ -46,11 +46,17 @@ function add_toolbox_button(name, label, hotkey, help_text) {
 	toolbox_button_posn.y += button_size.height + 5;
 }
 
+function add_toolbox_spacer() {
+	toolbox_button_posn.y += 10;
+}
+
 add_toolbox_button('add_vertex', 'Add vertex', 'v', 'Click.');
 add_toolbox_button('move_vertex', 'Move vertex', 'm', 'Drag a vertex.');
 add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click.');
 add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
 add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
+add_toolbox_spacer();
+add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex.');
 
 function set_button_color(button, color) {
 	button.firstChild.fillColor = color;
@@ -113,6 +119,17 @@ function vertex_label(vertex) {
 	return vertices[vertex].children[1];
 }
 
+function set_default_vertex_appearance(vertex) {
+	c = vertex_circle(vertex);
+	c.strokeColor = 'black';
+	c.strokeWidth = 0;
+}
+
+function set_default_edge_appearance(name) {
+	edges[name].strokeColor = 'grey';
+	edges[name].strokeWidth = 2;
+}
+
 function add_vertex(coords) {
 	var circle = new Path.Circle(0, 20);
 	circle.fillColor = new HsbColor(Math.random() * 360, 0.7, 0.5);
@@ -125,6 +142,8 @@ function add_vertex(coords) {
 	group.position = coords;
 
 	vertices.push(group);
+
+	set_default_vertex_appearance(vertices.length - 1);
 }
 
 function move_vertex(vertex, point) {
@@ -197,6 +216,33 @@ function vertex_at_posn(point) {
 	return false;
 }
 
+function vertex_neighbours(vertex) {
+	var result = [];
+
+	for (var i in edges) {
+		var edge_vertices = parse_edge_name(i);
+
+		if (edge_vertices[0] == vertex) {
+			result.push(edge_vertices[1]);
+		} else if (edge_vertices[1] == vertex) {
+			result.push(edge_vertices[0]);
+		}
+	}
+
+	return result;
+}
+
+function highlight_vertex(vertex) {
+	vertex_circle(vertex).strokeColor = new HsbColor(vertex_circle(vertex).fillColor);
+	vertex_circle(vertex).strokeColor.hue += 180;
+
+	vertex_circle(vertex).strokeWidth = 5;
+}
+
+function unhighlight_vertex(vertex) {
+	set_default_vertex_appearance(vertex);
+}
+
 function add_edge(start, end) {
 	var name = make_edge_name(start, end);
 
@@ -223,6 +269,8 @@ function add_edge(start, end) {
 	edges[name] = path;
 
 	default_layer.activate();
+
+	set_default_edge_appearance(name);
 }
 
 function delete_edge(start, end) {
@@ -237,6 +285,19 @@ function delete_edge(start, end) {
 	delete edges[name];
 }
 
+function highlight_edge(vertex1, vertex2) {
+	var name = make_edge_name(vertex1, vertex2);
+
+	edges[name].strokeColor = 'white';
+	edges[name].strokeWidth = 3;
+}
+
+function unhighlight_edge(vertex1, vertex2) {
+	var name = make_edge_name(vertex1, vertex2);
+
+	set_default_edge_appearance(name);
+}
+
 /*****************
  *  Interaction  *
  *****************/
@@ -244,9 +305,20 @@ function delete_edge(start, end) {
 // Don't draw too many points.
 tool.minDistance = 20;
 
-// Callbacks configured on the initial mouse press.
+// Some animations may disable tools.
+var tool_enabled = true;
+
+// Number of milliseconds to sleep between animation frames.
+var animation_delay = 500;
+
+// Callbacks, configured elsewhere.
 var dragFunction;
 var releaseFunction;
+var frameFunction;
+
+function get_time() {
+	return new Date().getTime();
+}
 
 // Start an edge action at a vertices, draw a path following the mouse, and
 // call the completion callback end_function when the mouse is released.
@@ -274,6 +346,28 @@ function start_edge_action(start_vertex, color, end_function) {
 	}
 }
 
+// Start a search animation with the given step function.
+function start_search(search_step) {
+	tool_enabled = false;
+
+	var next_frame = get_time() + animation_delay;
+
+	frameFunction = function() {
+		if (get_time() < next_frame) {
+			return;
+		} else {
+			next_frame = get_time() + animation_delay;
+		}
+
+		search_step();
+	}
+}
+
+function stop_search() {
+	tool_enabled = true;
+	frameFunction = false;
+}
+
 function onKeyDown(event) {
 	if (event.key in tool_hotkey_actions) {
 		set_active_tool(tool_hotkey_actions[event.key]);
@@ -283,6 +377,10 @@ function onKeyDown(event) {
 }
 
 function onMouseDown(event) {
+	if (!tool_enabled) {
+		return;
+	}
+
 	// Toolbox buttons always take precedence.
 	for (var i in toolbox_buttons) {
 		if (toolbox_buttons[i].hitTest(event.point)) {
@@ -338,6 +436,60 @@ function onMouseDown(event) {
 			start_edge_action(vertex, '#ff0000', delete_edge);
 		}
 		break;
+
+		case 'run_dfs':
+		var vertex = vertex_at_posn(event.point);
+
+		if (vertex === false) {
+			break;
+		}
+
+		var visited_vertices = {};
+		var vertex_stack = [vertex];
+
+		highlight_vertex(vertex);
+
+		function dfs_step() {
+			// Are we done with the search?
+			if (vertex_stack.length == 0) {
+				// Unhighlight all vertices.
+				for (var i in visited_vertices) {
+					unhighlight_vertex(i);
+				}
+
+				stop_search();
+
+				return;
+			}
+
+			// Visit the top-most vertex on the stack.
+			var current_vertex = vertex_stack[vertex_stack.length - 1];
+			visited_vertices[current_vertex] = true;
+
+			// Visit the next neighbour.
+			var neighbours = vertex_neighbours(current_vertex);
+
+			for (var i = 0; i < neighbours.length; i++) {
+				if (!(neighbours[i] in visited_vertices)) {
+					highlight_vertex(neighbours[i]);
+					highlight_edge(neighbours[i], current_vertex);
+					vertex_stack.push(neighbours[i]);
+
+					return;
+				}
+			}
+
+			// All neighbours have been visited, so backtrack.
+			vertex_stack.pop();
+
+			if (vertex_stack.length > 0) {
+				// Unhighlight the edge along which we're backtracking.
+				unhighlight_edge(current_vertex, vertex_stack[vertex_stack.length - 1]);
+			}
+		}
+
+		start_search(dfs_step);
+		break;
 	}
 }
 
@@ -350,5 +502,11 @@ function onMouseDrag(event) {
 function onMouseUp(event) {
 	if (releaseFunction) {
 		releaseFunction(event.point);
+	}
+}
+
+function onFrame(event) {
+	if (frameFunction) {
+		frameFunction();
 	}
 }
