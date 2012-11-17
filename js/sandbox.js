@@ -89,6 +89,12 @@ var vertices = [];
 // always at A, and the last is always at B.
 var edges = {};
 
+// Make a separate layer for the edges.
+var default_layer = project.activeLayer;
+var edge_layer = new Layer();
+edge_layer.moveBelow(default_layer);
+default_layer.activate();
+
 function make_edge_name(vertex1, vertex2) {
 	return 'e' + Math.min(vertex1, vertex2) + ':' + Math.max(vertex1, vertex2);
 }
@@ -206,6 +212,8 @@ function add_edge(start, end) {
 		end = temp;
 	}
 
+	edge_layer.activate();
+
 	var path = new Path();
 	path.strokeColor = 'grey';
 
@@ -213,6 +221,8 @@ function add_edge(start, end) {
 	path.add(vertex_circle(end).position);
 
 	edges[name] = path;
+
+	default_layer.activate();
 }
 
 function delete_edge(start, end) {
