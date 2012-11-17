@@ -29,12 +29,19 @@ function make_button(label, hotkey, x, y) {
 	return new Group([button, label_text, hotkey_text]);
 }
 
-var toolbox_buttons =
-	{ add_vertex: make_button('Add vertex', 'V', 10, 10)
-	, remove_vertex: make_button('Remove vertex', 'R', 10, 55)
-	, add_edge: make_button('Add edge', 'E', 10, 100)
-	, delete_edge: make_button('Delete edge', 'D', 10, 145)
+var toolbox_buttons = {};
+var toolbox_button_ypos = 10;
+
+function add_toolbox_button(name, label, hotkey) {
+	toolbox_buttons[name] = make_button(label, hotkey, 10, toolbox_button_ypos);
+
+	toolbox_button_ypos += button_size.height + 5;
 }
+
+add_toolbox_button('add_vertex', 'Add vertex', 'V');
+add_toolbox_button('remove_vertex', 'Remove vertex', 'R');
+add_toolbox_button('add_edge', 'Add edge', 'E');
+add_toolbox_button('delete_edge', 'Delete edge', 'D');
 
 function set_button_color(button, color) {
 	button.firstChild.fillColor = color;
