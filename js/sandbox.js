@@ -176,8 +176,8 @@ function vertex_at_posn(point) {
 function add_edge(start, end) {
 	var name = make_edge_name(start, end);
 
-	// Not if it already exists.
-	if (edges[name]) {
+	// Not if it already exists or if it connects a vertex with itself.
+	if (edges[name] || start == end) {
 		return;
 	}
 
