@@ -12,8 +12,17 @@ var button_corners = new Size(5, 5);
 var button_text_offset = new Point(10, 25);
 var button_hotkey_offset = new Point(button_size.width - 30, 25);
 
-function make_button(label, hotkey, x, y) {
-	var rectangle = new Rectangle(new Point(x, y), button_size);
+var toolbox_buttons = {};
+var toolbox_button_posn = new Point(10, 10);
+
+var tool_help = {};
+var tool_hotkey_actions = {};
+
+var tool_help_text = new PointText(toolbox_button_posn + new Point(button_size.width + 10, 15));
+tool_help_text.characterStyle.fillColor = 'white';
+
+function make_button(label, hotkey, posn) {
+	var rectangle = new Rectangle(posn, button_size);
 
 	var button = new Path.RoundRectangle(rectangle, button_corners);
 	button.fillColor = button_color_inactive;
@@ -23,29 +32,32 @@ function make_button(label, hotkey, x, y) {
 	label_text.characterStyle.fillColor = 'white';
 
 	var hotkey_text = new PointText(rectangle.point + button_hotkey_offset);
-	hotkey_text.content = '[' + hotkey + ']';
+	hotkey_text.content = '[' + hotkey.toUpperCase() + ']';
 	hotkey_text.characterStyle.fillColor = 'white';
 
 	return new Group([button, label_text, hotkey_text]);
 }
 
-var toolbox_buttons = {};
-var toolbox_button_ypos = 10;
+function add_toolbox_button(name, label, hotkey, help_text) {
+	toolbox_buttons[name] = make_button(label, hotkey, toolbox_button_posn);
+	tool_hotkey_actions[hotkey] = name;
+	tool_help[name] = help_text;
 
-function add_toolbox_button(name, label, hotkey) {
-	toolbox_buttons[name] = make_button(label, hotkey, 10, toolbox_button_ypos);
-
-	toolbox_button_ypos += button_size.height + 5;
+	toolbox_button_posn.y += button_size.height + 5;
 }
 
-add_toolbox_button('add_vertex', 'Add vertex', 'V');
-add_toolbox_button('move_vertex', 'Move vertex', 'M');
-add_toolbox_button('remove_vertex', 'Remove vertex', 'R');
-add_toolbox_button('add_edge', 'Add edge', 'E');
-add_toolbox_button('delete_edge', 'Delete edge', 'D');
+add_toolbox_button('add_vertex', 'Add vertex', 'v', 'Click.');
+add_toolbox_button('move_vertex', 'Move vertex', 'm', 'Drag a vertex.');
+add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click.');
+add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
+add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
 
 function set_button_color(button, color) {
 	button.firstChild.fillColor = color;
+}
+
+function draw_help_text(text) {
+	tool_help_text.content = text;
 }
 
 function set_active_tool(name) {
@@ -55,6 +67,12 @@ function set_active_tool(name) {
 
 	current_tool = name;
 	set_button_color(toolbox_buttons[current_tool], button_color_active);
+
+	if (tool_help[name]) {
+		draw_help_text(tool_help[name]);
+	} else {
+		draw_help_text('');
+	}
 }
 
 set_active_tool('add_vertex');
@@ -247,27 +265,10 @@ function start_edge_action(start_vertex, color, end_function) {
 }
 
 function onKeyDown(event) {
-	switch (event.key) {
-		// Toggle tools using hotkeys.
-		case 'v':
-		set_active_tool('add_vertex');
-		break;
+	if (event.key in tool_hotkey_actions) {
+		set_active_tool(tool_hotkey_actions[event.key]);
 
-		case 'm':
-		set_active_tool('move_vertex');
-		break;
-
-		case 'r':
-		set_active_tool('remove_vertex');
-		break;
-
-		case 'e':
-		set_active_tool('add_edge');
-		break;
-
-		case 'd':
-		set_active_tool('delete_edge');
-		break;
+		return;
 	}
 }
 
