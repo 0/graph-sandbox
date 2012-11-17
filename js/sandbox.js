@@ -33,7 +33,7 @@ var toolbox_buttons =
 	{ add_vertex: make_button('Add vertex', 'V', 10, 10)
 	, remove_vertex: make_button('Remove vertex', 'R', 10, 55)
 	, add_edge: make_button('Add edge', 'E', 10, 100)
-	, remove_edge: make_button('Remove edge', 'D', 10, 145)
+	, delete_edge: make_button('Delete edge', 'D', 10, 145)
 }
 
 function set_button_color(button, color) {
@@ -111,7 +111,7 @@ function remove_vertex(vertex) {
 
 		if (edge_vertices[0] == vertex || edge_vertices[1] == vertex) {
 			// This edge doesn't exist anymore, so just remove it.
-			remove_edge(edge_vertices[0], edge_vertices[1]);
+			delete_edge(edge_vertices[0], edge_vertices[1]);
 		} else if (edge_vertices[0] > vertex || edge_vertices[1] > vertex) {
 			// This edge still exists, but at least one of the vertices has had
 			// its index decremented.
@@ -120,7 +120,7 @@ function remove_vertex(vertex) {
 
 			temp_edges.push([v1, v2]);
 
-			remove_edge(edge_vertices[0], edge_vertices[1]);
+			delete_edge(edge_vertices[0], edge_vertices[1]);
 		}
 	}
 
@@ -158,7 +158,7 @@ function add_edge(start, end) {
 	edges[name] = path;
 }
 
-function remove_edge(start, end) {
+function delete_edge(start, end) {
 	var name = make_edge_name(start, end);
 
 	// Not if it doesn't exist.
@@ -223,7 +223,7 @@ function onKeyDown(event) {
 		break;
 
 		case 'd':
-		set_active_tool('remove_edge');
+		set_active_tool('delete_edge');
 		break;
 	}
 }
@@ -260,11 +260,11 @@ function onMouseDown(event) {
 		}
 		break;
 
-		case 'remove_edge':
+		case 'delete_edge':
 		var vertex = vertex_at_posn(event.point);
 
 		if (vertex !== false) {
-			start_edge_action(vertex, '#ff0000', remove_edge);
+			start_edge_action(vertex, '#ff0000', delete_edge);
 		}
 		break;
 	}
