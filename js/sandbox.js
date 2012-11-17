@@ -57,6 +57,8 @@ add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
 add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
 add_toolbox_spacer();
 add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex.');
+add_toolbox_spacer();
+add_toolbox_button('insert_binary_tree', 'Insert binary tree', 'b', 'Click.');
 
 function set_button_color(button, color) {
 	button.firstChild.fillColor = color;
@@ -144,6 +146,8 @@ function add_vertex(coords) {
 	vertices.push(group);
 
 	set_default_vertex_appearance(vertices.length - 1);
+
+	return vertices.length - 1;
 }
 
 function move_vertex(vertex, point) {
@@ -376,6 +380,32 @@ function onKeyDown(event) {
 	}
 }
 
+function insert_binary_tree(depth, root_position) {
+	var step = 60;
+	var parents = [];
+	var next_parents = [];
+
+	for (var i = 0; i < depth; i++) {
+		var depth_step = step * Math.pow(2, depth - i - 1);
+		var left_pos = -1 * depth_step * (Math.pow(2, i - 1) - 1 / 2);
+
+		for (var j = 0; j < Math.pow(2, i); j++) {
+			var cur = add_vertex(root_position + new Point(left_pos, 50 * i));
+			next_parents.push(cur);
+
+			// The root doesn't have any parents.
+			if (parents.length > 0) {
+				add_edge(cur, parents[Math.floor(j / 2)]);
+			}
+
+			left_pos += depth_step;
+		}
+
+		parents = next_parents;
+		next_parents = [];
+	}
+}
+
 function onMouseDown(event) {
 	if (!tool_enabled) {
 		return;
@@ -489,6 +519,10 @@ function onMouseDown(event) {
 		}
 
 		start_search(dfs_step);
+		break;
+
+		case 'insert_binary_tree':
+		insert_binary_tree(4, event.point);
 		break;
 	}
 }
