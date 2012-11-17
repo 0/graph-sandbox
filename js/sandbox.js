@@ -7,7 +7,7 @@ var current_tool;
 var button_color_inactive = new HsbColor(250, 0.6, 0.45);
 var button_color_active = new HsbColor(120, 0.6, 0.45);
 
-var button_size = new Size(170, 40);
+var button_size = new Size(180, 40);
 var button_corners = new Size(5, 5);
 var button_text_offset = new Point(10, 25);
 var button_hotkey_offset = new Point(button_size.width - 30, 25);
@@ -57,6 +57,7 @@ add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
 add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
 add_toolbox_spacer();
 add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex.');
+add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex.');
 add_toolbox_spacer();
 add_toolbox_button('insert_binary_tree', 'Insert binary tree', 'b', 'Click.');
 
@@ -519,6 +520,58 @@ function onMouseDown(event) {
 		}
 
 		start_search(dfs_step);
+		break;
+
+		case 'run_bfs':
+		var vertex = vertex_at_posn(event.point);
+
+		if (vertex === false) {
+			break;
+		}
+
+		var visited_vertices = {};
+		visited_vertices[vertex] = true;
+		var highlighted_edges = [];
+		var vertex_queue = [vertex];
+
+		function bfs_step() {
+			// Are we done with the search?
+			if (vertex_queue.length == 0) {
+				// Unhighlight all vertices and edges.
+				for (var i in visited_vertices) {
+					unhighlight_vertex(i);
+				}
+
+				for (var i = 0; i < highlighted_edges.length; i++) {
+					unhighlight_edge(highlighted_edges[i][0], highlighted_edges[i][1]);
+				}
+
+				stop_search();
+
+				return;
+			}
+
+			// Visit the first vertex in the queue.
+			var current_vertex = vertex_queue.splice(0, 1);
+			highlight_vertex(current_vertex);
+
+			// Queue all the neighbours.
+			var neighbours = vertex_neighbours(current_vertex);
+
+			for (var i = 0; i < neighbours.length; i++) {
+				if (!(neighbours[i] in visited_vertices)) {
+					highlight_edge(neighbours[i], current_vertex);
+					highlighted_edges.push([neighbours[i], current_vertex]);
+
+					vertex_queue.push(neighbours[i]);
+
+					// Make sure that it doesn't get queued again.
+					visited_vertices[neighbours[i]] = true;
+				}
+			}
+		}
+
+		start_search(bfs_step);
 		break;
 
 		case 'insert_binary_tree':
