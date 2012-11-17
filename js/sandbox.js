@@ -55,7 +55,7 @@ set_active_tool('add_vertex');
  *  Graph  *
  ***********/
 
-// Array of Circle objects corresponding to the vertices.
+// Array of Group objects corresponding to the vertices.
 var vertices = [];
 
 // Object of Path objects. The keys are of the form 'eA:B' where A and B are
@@ -72,11 +72,23 @@ function parse_edge_name(name) {
 	return [parseInt(name.substring(1, colon), 10), parseInt(name.substring(colon+1), 10)];
 }
 
-function add_vertex(coords) {
-	var vertex_circle = new Path.Circle(coords, 20);
-	vertex_circle.fillColor = new HsbColor(Math.random() * 360, 0.7, 0.5);
+function vertex_circle(vertex) {
+	return vertices[vertex].children[0];
+}
 
-	vertices.push(vertex_circle);
+function vertex_label(vertex) {
+	return vertices[vertex].children[1];
+}
+
+function add_vertex(coords) {
+	var circle = new Path.Circle(coords, 20);
+	circle.fillColor = new HsbColor(Math.random() * 360, 0.7, 0.5);
+
+	var label_text = new PointText(circle.position);
+	label_text.content = vertices.length;
+	label_text.characterStyle.fillColor = 'white';
+
+	vertices.push(new Group([circle, label_text]));
 }
 
 function remove_vertex(vertex) {
@@ -84,6 +96,11 @@ function remove_vertex(vertex) {
 	// indices.
 	vertices[vertex].remove();
 	vertices.splice(vertex, 1);
+
+	// Update all the labels on the later vertices.
+	for (var i = vertex; i < vertices.length; i++) {
+		vertex_label(i).content = i;
+	}
 
 	// Keep track of all the edges that will need to be re-created with new
 	// end-points.
@@ -133,10 +150,10 @@ function add_edge(start, end) {
 	}
 
 	var path = new Path();
-	path.strokeColor = 'white';
+	path.strokeColor = 'grey';
 
-	path.add(vertices[start].position);
-	path.add(vertices[end].position);
+	path.add(vertex_circle(start).position);
+	path.add(vertex_circle(end).position);
 
 	edges[name] = path;
 }
@@ -169,7 +186,7 @@ var releaseFunction;
 function start_edge_action(start_vertex, color, end_function) {
 	var path = new Path();
 	path.strokeColor = color;
-	path.add(vertices[start_vertex].position);
+	path.add(vertex_circle(start_vertex).position);
 
 	dragFunction = function(point) {
 		path.add(point);
