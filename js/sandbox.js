@@ -39,6 +39,7 @@ function add_toolbox_button(name, label, hotkey) {
 }
 
 add_toolbox_button('add_vertex', 'Add vertex', 'V');
+add_toolbox_button('move_vertex', 'Move vertex', 'M');
 add_toolbox_button('remove_vertex', 'Remove vertex', 'R');
 add_toolbox_button('add_edge', 'Add edge', 'E');
 add_toolbox_button('delete_edge', 'Delete edge', 'D');
@@ -66,7 +67,8 @@ set_active_tool('add_vertex');
 var vertices = [];
 
 // Object of Path objects. The keys are of the form 'eA:B' where A and B are
-// indices into the vertices array, and A < B.
+// indices into the vertices array, and A < B. The first point of the path is
+// always at A, and the last is always at B.
 var edges = {};
 
 function make_edge_name(vertex1, vertex2) {
@@ -88,14 +90,37 @@ function vertex_label(vertex) {
 }
 
 function add_vertex(coords) {
-	var circle = new Path.Circle(coords, 20);
+	var circle = new Path.Circle(0, 20);
 	circle.fillColor = new HsbColor(Math.random() * 360, 0.7, 0.5);
 
 	var label_text = new PointText(circle.position);
 	label_text.content = vertices.length;
 	label_text.characterStyle.fillColor = 'white';
 
-	vertices.push(new Group([circle, label_text]));
+	var group = new Group([circle, label_text]);
+	group.position = coords;
+
+	vertices.push(group);
+}
+
+function move_vertex(vertex, point) {
+	// Move the vertex itself.
+	vertices[vertex].position = point;
+
+	// Move all the edges incident to the vertex.
+	for (var i in edges) {
+		var edge_vertices = parse_edge_name(i);
+
+		if (edge_vertices[0] == vertex) {
+			edges[i].removeSegment(0);
+			edges[i].insert(0, point);
+		} else if (edge_vertices[1] == vertex) {
+			last_segment = edges[i].segments.length - 1;
+
+			edges[i].removeSegment(last_segment);
+			edges[i].insert(last_segment, point);
+		}
+	}
 }
 
 function remove_vertex(vertex) {
@@ -154,6 +179,13 @@ function add_edge(start, end) {
 	// Not if it already exists.
 	if (edges[name]) {
 		return;
+	}
+
+	// Make sure the path is always in the same direction as the edge name.
+	if (start > end) {
+		temp = start;
+		start = end;
+		end = temp;
 	}
 
 	var path = new Path();
@@ -221,6 +253,10 @@ function onKeyDown(event) {
 		set_active_tool('add_vertex');
 		break;
 
+		case 'm':
+		set_active_tool('move_vertex');
+		break;
+
 		case 'r':
 		set_active_tool('remove_vertex');
 		break;
@@ -249,6 +285,23 @@ function onMouseDown(event) {
 	switch (current_tool) {
 		case 'add_vertex':
 		add_vertex(event.point);
+		break;
+
+		case 'move_vertex':
+		var vertex = vertex_at_posn(event.point);
+
+		if (vertex === false) {
+			break;
+		}
+
+		dragFunction = function(point) {
+			move_vertex(vertex, point);
+		}
+
+		releaseFunction = function(point) {
+			dragFunction = false;
+			releaseFunction = false;
+		}
 		break;
 
 		case 'remove_vertex':
