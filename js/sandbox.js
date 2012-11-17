@@ -3,6 +3,7 @@
  *************/
 
 var current_tool;
+var tools_enabled = true;
 
 var button_color_inactive = new HsbColor(250, 0.6, 0.45);
 var button_color_active = new HsbColor(120, 0.6, 0.45);
@@ -82,6 +83,22 @@ function set_active_tool(name) {
 	} else {
 		draw_help_text('');
 	}
+}
+
+function toggle_tool_status(enabled) {
+	for (var i in toolbox_buttons) {
+		toolbox_buttons[i].opacity = enabled ? 1.0 : 0.7;
+	}
+}
+
+function enable_tools() {
+	tools_enabled = true;
+	toggle_tool_status(tools_enabled);
+}
+
+function disable_tools() {
+	tools_enabled = false;
+	toggle_tool_status(tools_enabled);
 }
 
 set_active_tool('add_vertex');
@@ -310,9 +327,6 @@ function unhighlight_edge(vertex1, vertex2) {
 // Don't draw too many points.
 tool.minDistance = 20;
 
-// Some animations may disable tools.
-var tool_enabled = true;
-
 // Number of milliseconds to sleep between animation frames.
 var animation_delay = 500;
 
@@ -353,7 +367,7 @@ function start_edge_action(start_vertex, color, end_function) {
 
 // Start a search animation with the given step function.
 function start_search(search_step) {
-	tool_enabled = false;
+	disable_tools();
 
 	var next_frame = get_time() + animation_delay;
 
@@ -369,7 +383,7 @@ function start_search(search_step) {
 }
 
 function stop_search() {
-	tool_enabled = true;
+	enable_tools();
 	frameFunction = false;
 }
 
@@ -408,7 +422,7 @@ function insert_binary_tree(depth, root_position) {
 }
 
 function onMouseDown(event) {
-	if (!tool_enabled) {
+	if (!tools_enabled) {
 		return;
 	}
 
