@@ -112,19 +112,20 @@ function set_active_tool(name) {
 }
 
 function toggle_tool_status(enabled) {
+	tools_enabled = enabled;
+	tool_help_text.visible = enabled;
+
 	for (var i in toolbox_buttons) {
 		toolbox_buttons[i].opacity = enabled ? 1.0 : 0.7;
 	}
 }
 
 function enable_tools() {
-	tools_enabled = true;
-	toggle_tool_status(tools_enabled);
+	toggle_tool_status(true);
 }
 
 function disable_tools() {
-	tools_enabled = false;
-	toggle_tool_status(tools_enabled);
+	toggle_tool_status(false);
 }
 
 set_active_tool('add_vertex');
