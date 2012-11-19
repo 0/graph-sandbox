@@ -53,7 +53,7 @@ function add_toolbox_spacer() {
 
 add_toolbox_button('add_vertex', 'Add vertex', 'v', 'Click.');
 add_toolbox_button('move_vertex', 'Move vertex', 'm', 'Drag a vertex.');
-add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click.');
+add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click. Shift-click to clear.');
 add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
 add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
 add_toolbox_spacer();
@@ -459,10 +459,16 @@ function onMouseDown(event) {
 		break;
 
 		case 'remove_vertex':
-		var vertex = vertex_at_posn(event.point);
+		if (Key.isDown('shift')) {
+			while (vertices.length > 0) {
+				remove_vertex(0);
+			}
+		} else {
+			var vertex = vertex_at_posn(event.point);
 
-		if (vertex !== false) {
-			remove_vertex(vertex);
+			if (vertex !== false) {
+				remove_vertex(vertex);
+			}
 		}
 		break;
 
