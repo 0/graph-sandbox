@@ -229,7 +229,7 @@ function remove_vertex(vertex) {
 
 // Get the vertex sitting at the given position, if there is one.
 function vertex_at_posn(point) {
-	for (var i = 0; i < vertices.length; i++) {
+	for (var i = vertices.length - 1; i >= 0; i--) {
 		if (vertices[i].hitTest(point)) {
 			return i;
 		}
