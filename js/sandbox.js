@@ -8,10 +8,10 @@ var tools_enabled = true;
 var button_color_inactive = new HsbColor(250, 0.6, 0.45);
 var button_color_active = new HsbColor(120, 0.6, 0.45);
 
-var button_size = new Size(180, 40);
+var button_size = new Size(180, 25);
 var button_corners = new Size(5, 5);
-var button_text_offset = new Point(10, 25);
-var button_hotkey_offset = new Point(button_size.width - 30, 25);
+var button_text_offset = new Point(10, 17);
+var button_hotkey_offset = new Point(button_size.width - 30, button_text_offset.y);
 
 var toolbox_buttons = {};
 var toolbox_button_posn = new Point(10, 10);
