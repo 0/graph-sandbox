@@ -572,7 +572,7 @@ function onMouseDown(event) {
 			}
 
 			// Visit the first vertex in the queue.
-			var current_vertex = vertex_queue.splice(0, 1);
+			var current_vertex = vertex_queue.splice(0, 1)[0];
 			highlight_vertex(current_vertex);
 
 			// Queue all the neighbours.
