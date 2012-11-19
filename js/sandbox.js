@@ -562,10 +562,6 @@ function onMouseDown(event) {
 					unhighlight_vertex(i);
 				}
 
-				for (var i = 0; i < highlighted_edges.length; i++) {
-					unhighlight_edge(highlighted_edges[i][0], highlighted_edges[i][1]);
-				}
-
 				stop_search();
 
 				return;
@@ -574,6 +570,12 @@ function onMouseDown(event) {
 			// Visit the first vertex in the queue.
 			var current_vertex = vertex_queue.splice(0, 1)[0];
 			highlight_vertex(current_vertex);
+
+			// Unhighlight the edge that caused it to be visited.
+			if (highlighted_edges.length > 0) {
+				var edge = highlighted_edges.splice(0, 1)[0];
+				unhighlight_edge(edge[0], edge[1]);
+			}
 
 			// Queue all the neighbours.
 			var neighbours = vertex_neighbours(current_vertex);
