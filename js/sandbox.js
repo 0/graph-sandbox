@@ -438,167 +438,167 @@ function onMouseDown(event) {
 	// Clicked elsewhere, so make use of the current tool.
 	switch (current_tool) {
 		case 'add_vertex':
-		add_vertex(event.point);
-		break;
+			add_vertex(event.point);
+			break;
 
 		case 'move_vertex':
-		var vertex = vertex_at_posn(event.point);
+			var vertex = vertex_at_posn(event.point);
 
-		if (vertex === false) {
+			if (vertex === false) {
+				break;
+			}
+
+			dragFunction = function(point) {
+				move_vertex(vertex, point);
+			}
+
+			releaseFunction = function(point) {
+				dragFunction = false;
+				releaseFunction = false;
+			}
 			break;
-		}
-
-		dragFunction = function(point) {
-			move_vertex(vertex, point);
-		}
-
-		releaseFunction = function(point) {
-			dragFunction = false;
-			releaseFunction = false;
-		}
-		break;
 
 		case 'remove_vertex':
-		if (Key.isDown('shift')) {
-			while (vertices.length > 0) {
-				remove_vertex(0);
+			if (Key.isDown('shift')) {
+				while (vertices.length > 0) {
+					remove_vertex(0);
+				}
+			} else {
+				var vertex = vertex_at_posn(event.point);
+
+				if (vertex !== false) {
+					remove_vertex(vertex);
+				}
 			}
-		} else {
+			break;
+
+		case 'add_edge':
 			var vertex = vertex_at_posn(event.point);
 
 			if (vertex !== false) {
-				remove_vertex(vertex);
+				start_edge_action(vertex, '#00ff00', add_edge);
 			}
-		}
-		break;
-
-		case 'add_edge':
-		var vertex = vertex_at_posn(event.point);
-
-		if (vertex !== false) {
-			start_edge_action(vertex, '#00ff00', add_edge);
-		}
-		break;
+			break;
 
 		case 'delete_edge':
-		var vertex = vertex_at_posn(event.point);
+			var vertex = vertex_at_posn(event.point);
 
-		if (vertex !== false) {
-			start_edge_action(vertex, '#ff0000', delete_edge);
-		}
-		break;
+			if (vertex !== false) {
+				start_edge_action(vertex, '#ff0000', delete_edge);
+			}
+			break;
 
 		case 'run_dfs':
-		var vertex = vertex_at_posn(event.point);
+			var vertex = vertex_at_posn(event.point);
 
-		if (vertex === false) {
-			break;
-		}
-
-		var visited_vertices = {};
-		var vertex_stack = [vertex];
-
-		highlight_vertex(vertex);
-
-		function dfs_step() {
-			// Are we done with the search?
-			if (vertex_stack.length == 0) {
-				// Unhighlight all vertices.
-				for (var i in visited_vertices) {
-					unhighlight_vertex(i);
-				}
-
-				stop_search();
-
-				return;
+			if (vertex === false) {
+				break;
 			}
 
-			// Visit the top-most vertex on the stack.
-			var current_vertex = vertex_stack[vertex_stack.length - 1];
-			visited_vertices[current_vertex] = true;
+			var visited_vertices = {};
+			var vertex_stack = [vertex];
 
-			// Visit the next neighbour.
-			var neighbours = vertex_neighbours(current_vertex);
+			highlight_vertex(vertex);
 
-			for (var i = 0; i < neighbours.length; i++) {
-				if (!(neighbours[i] in visited_vertices)) {
-					highlight_vertex(neighbours[i]);
-					highlight_edge(neighbours[i], current_vertex);
-					vertex_stack.push(neighbours[i]);
+			function dfs_step() {
+				// Are we done with the search?
+				if (vertex_stack.length == 0) {
+					// Unhighlight all vertices.
+					for (var i in visited_vertices) {
+						unhighlight_vertex(i);
+					}
+
+					stop_search();
 
 					return;
 				}
+
+				// Visit the top-most vertex on the stack.
+				var current_vertex = vertex_stack[vertex_stack.length - 1];
+				visited_vertices[current_vertex] = true;
+
+				// Visit the next neighbour.
+				var neighbours = vertex_neighbours(current_vertex);
+
+				for (var i = 0; i < neighbours.length; i++) {
+					if (!(neighbours[i] in visited_vertices)) {
+						highlight_vertex(neighbours[i]);
+						highlight_edge(neighbours[i], current_vertex);
+						vertex_stack.push(neighbours[i]);
+
+						return;
+					}
+				}
+
+				// All neighbours have been visited, so backtrack.
+				vertex_stack.pop();
+
+				if (vertex_stack.length > 0) {
+					// Unhighlight the edge along which we're backtracking.
+					unhighlight_edge(current_vertex, vertex_stack[vertex_stack.length - 1]);
+				}
 			}
 
-			// All neighbours have been visited, so backtrack.
-			vertex_stack.pop();
-
-			if (vertex_stack.length > 0) {
-				// Unhighlight the edge along which we're backtracking.
-				unhighlight_edge(current_vertex, vertex_stack[vertex_stack.length - 1]);
-			}
-		}
-
-		start_search(dfs_step);
-		break;
+			start_search(dfs_step);
+			break;
 
 		case 'run_bfs':
-		var vertex = vertex_at_posn(event.point);
+			var vertex = vertex_at_posn(event.point);
 
-		if (vertex === false) {
+			if (vertex === false) {
+				break;
+			}
+
+			var visited_vertices = {};
+			visited_vertices[vertex] = true;
+			var highlighted_edges = [];
+			var vertex_queue = [vertex];
+
+			function bfs_step() {
+				// Are we done with the search?
+				if (vertex_queue.length == 0) {
+					// Unhighlight all vertices and edges.
+					for (var i in visited_vertices) {
+						unhighlight_vertex(i);
+					}
+
+					stop_search();
+
+					return;
+				}
+
+				// Visit the first vertex in the queue.
+				var current_vertex = vertex_queue.splice(0, 1)[0];
+				highlight_vertex(current_vertex);
+
+				// Unhighlight the edge that caused it to be visited.
+				if (highlighted_edges.length > 0) {
+					var edge = highlighted_edges.splice(0, 1)[0];
+					unhighlight_edge(edge[0], edge[1]);
+				}
+
+				// Queue all the neighbours.
+				var neighbours = vertex_neighbours(current_vertex);
+
+				for (var i = 0; i < neighbours.length; i++) {
+					if (!(neighbours[i] in visited_vertices)) {
+						highlight_edge(neighbours[i], current_vertex);
+						highlighted_edges.push([neighbours[i], current_vertex]);
+
+						vertex_queue.push(neighbours[i]);
+
+						// Make sure that it doesn't get queued again.
+						visited_vertices[neighbours[i]] = true;
+					}
+				}
+			}
+
+			start_search(bfs_step);
 			break;
-		}
-
-		var visited_vertices = {};
-		visited_vertices[vertex] = true;
-		var highlighted_edges = [];
-		var vertex_queue = [vertex];
-
-		function bfs_step() {
-			// Are we done with the search?
-			if (vertex_queue.length == 0) {
-				// Unhighlight all vertices and edges.
-				for (var i in visited_vertices) {
-					unhighlight_vertex(i);
-				}
-
-				stop_search();
-
-				return;
-			}
-
-			// Visit the first vertex in the queue.
-			var current_vertex = vertex_queue.splice(0, 1)[0];
-			highlight_vertex(current_vertex);
-
-			// Unhighlight the edge that caused it to be visited.
-			if (highlighted_edges.length > 0) {
-				var edge = highlighted_edges.splice(0, 1)[0];
-				unhighlight_edge(edge[0], edge[1]);
-			}
-
-			// Queue all the neighbours.
-			var neighbours = vertex_neighbours(current_vertex);
-
-			for (var i = 0; i < neighbours.length; i++) {
-				if (!(neighbours[i] in visited_vertices)) {
-					highlight_edge(neighbours[i], current_vertex);
-					highlighted_edges.push([neighbours[i], current_vertex]);
-
-					vertex_queue.push(neighbours[i]);
-
-					// Make sure that it doesn't get queued again.
-					visited_vertices[neighbours[i]] = true;
-				}
-			}
-		}
-
-		start_search(bfs_step);
-		break;
 
 		case 'insert_binary_tree':
-		insert_binary_tree(4, event.point);
-		break;
+			insert_binary_tree(4, event.point);
+			break;
 	}
 }
 
