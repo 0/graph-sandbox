@@ -18,6 +18,7 @@ var toolbox_button_posn = new Point(10, 10);
 
 var tool_help = {};
 var tool_hotkey_actions = {};
+var tool_cleanup = {};
 
 var tool_help_text = new PointText(toolbox_button_posn + new Point(button_size.width + 10, 15));
 tool_help_text.characterStyle.fillColor = 'white';
@@ -33,7 +34,9 @@ function make_button(label, hotkey, posn) {
 	label_text.characterStyle.fillColor = 'white';
 
 	var hotkey_text = new PointText(rectangle.point + button_hotkey_offset);
-	hotkey_text.content = '[' + hotkey.toUpperCase() + ']';
+	if (hotkey) {
+		hotkey_text.content = '[' + hotkey.toUpperCase() + ']';
+	}
 	hotkey_text.characterStyle.fillColor = 'white';
 
 	return new Group([button, label_text, hotkey_text]);
@@ -41,7 +44,9 @@ function make_button(label, hotkey, posn) {
 
 function add_toolbox_button(name, label, hotkey, help_text) {
 	toolbox_buttons[name] = make_button(label, hotkey, toolbox_button_posn);
-	tool_hotkey_actions[hotkey] = name;
+	if (hotkey) {
+		tool_hotkey_actions[hotkey] = name;
+	}
 	tool_help[name] = help_text;
 
 	toolbox_button_posn.y += button_size.height + 5;
@@ -57,10 +62,27 @@ add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click. Shift-click to
 add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
 add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
 add_toolbox_spacer();
+add_toolbox_button('show_adjacent', 'Adjacent vertices', null, 'Hover.');
+add_toolbox_button('show_incident', 'Incident edges', null, 'Hover.');
+add_toolbox_spacer();
 add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex.');
 add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex.');
 add_toolbox_spacer();
 add_toolbox_button('insert_binary_tree', 'Insert binary tree', 't', 'Click.');
+
+tool_cleanup['show_adjacent'] = function() {
+	for (var i = 0; i < vertices.length; i++) {
+		unhighlight_vertex(i);
+	}
+};
+
+tool_cleanup['show_incident'] = function() {
+	for (var i in edges) {
+		var vertices = parse_edge_name(i);
+
+		unhighlight_edge(vertices[0], vertices[1]);
+	}
+};
 
 function set_button_color(button, color) {
 	button.firstChild.fillColor = color;
@@ -73,6 +95,10 @@ function draw_help_text(text) {
 function set_active_tool(name) {
 	if (current_tool) {
 		set_button_color(toolbox_buttons[current_tool], button_color_inactive);
+
+		if (current_tool in tool_cleanup) {
+			tool_cleanup[current_tool]();
+		}
 	}
 
 	current_tool = name;
@@ -418,6 +444,48 @@ function insert_binary_tree(depth, root_position) {
 
 		parents = next_parents;
 		next_parents = [];
+	}
+}
+
+function onMouseMove(event) {
+	if (!tools_enabled) {
+		return;
+	}
+
+	switch (current_tool) {
+		case 'show_adjacent':
+			var vertex = vertex_at_posn(event.point);
+
+			if (vertex === false) {
+				break;
+			}
+
+			tool_cleanup['show_adjacent']();
+
+			var neighbours = vertex_neighbours(vertex);
+
+			for (var i = 0; i < neighbours.length; i++) {
+				highlight_vertex(neighbours[i]);
+			}
+
+			break;
+
+		case 'show_incident':
+			var vertex = vertex_at_posn(event.point);
+
+			if (vertex === false) {
+				break;
+			}
+
+			tool_cleanup['show_incident']();
+
+			var neighbours = vertex_neighbours(vertex);
+
+			for (var i = 0; i < neighbours.length; i++) {
+				highlight_edge(vertex, neighbours[i]);
+			}
+
+			break;
 	}
 }
 
