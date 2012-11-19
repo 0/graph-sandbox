@@ -184,6 +184,9 @@ function add_vertex(coords) {
 	var label_text = new PointText(circle.position);
 	label_text.content = vertices.length;
 	label_text.characterStyle.fillColor = 'white';
+	// Attempt to center the label in the vertex.
+	label_text.position.y += 4;
+	label_text.justification = 'center';
 
 	var group = new Group([circle, label_text]);
 	group.position = coords;
