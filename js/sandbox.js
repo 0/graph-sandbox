@@ -60,7 +60,7 @@ add_toolbox_spacer();
 add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex.');
 add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex.');
 add_toolbox_spacer();
-add_toolbox_button('insert_binary_tree', 'Insert binary tree', 'b', 'Click.');
+add_toolbox_button('insert_binary_tree', 'Insert binary tree', 't', 'Click.');
 
 function set_button_color(button, color) {
 	button.firstChild.fillColor = color;
