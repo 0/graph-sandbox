@@ -93,6 +93,7 @@ add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex
 add_toolbox_spacer();
 add_toolbox_button('insert_binary_tree', 'Insert binary tree', 't', 'Click.');
 add_toolbox_button('insert_complete_graph', 'Insert complete graph', null, 'Click.');
+add_toolbox_button('insert_random_graph', 'Insert random graph', null, 'Click.');
 
 tool_cleanup['show_adjacent'] = function () {
 	G.unhighlight_all();
@@ -555,7 +556,7 @@ function insert_binary_tree(depth, root_position) {
 	}
 }
 
-function insert_complete_graph(n, center_position) {
+function insert_complete_graph(n, center_position, vertex_prob, edge_prob) {
 	if (n <= 0) {
 		return;
 	}
@@ -570,23 +571,35 @@ function insert_complete_graph(n, center_position) {
 		radius = 1.5 * circle_radius / Math.sin(angle_step / 2);
 	}
 
-	var angle = 0;
+	var angle = -1 * angle_step;
 	var vertices = [];
 
 	for (var i = 0; i < n; i++) {
+		angle += angle_step;
+
+		if (vertex_prob !== undefined && Math.random() > vertex_prob) {
+			continue;
+		}
+
 		var x = radius * Math.sin(angle);
 		var y = -1 * radius * Math.cos(angle);
 
 		vertices.push(G.add_vertex(center_position + new Point(x, y)));
-
-		angle += angle_step;
 	}
 
 	for (var i = 0; i < vertices.length; i++) {
 		for (var j = i + 1; j < vertices.length; j++) {
+			if (edge_prob !== undefined && Math.random() > edge_prob) {
+				continue;
+			}
+
 			G.add_edge(vertices[i], vertices[j]);
 		}
 	}
+}
+
+function insert_random_graph(max_n, center_position) {
+	insert_complete_graph(max_n, center_position, 0.5, 0.5);
 }
 
 function onMouseMove(event) {
@@ -805,6 +818,10 @@ function onMouseDown(event) {
 
 		case 'insert_complete_graph':
 			insert_complete_graph(7, event.point);
+			break;
+
+		case 'insert_random_graph':
+			insert_random_graph(12, event.point);
 			break;
 	}
 }
