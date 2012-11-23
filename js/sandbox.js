@@ -25,7 +25,7 @@ var tools_enabled = true;
 var button_color_inactive = new HsbColor(250, 0.6, 0.45);
 var button_color_active = new HsbColor(120, 0.6, 0.45);
 
-var button_size = new Size(180, 25);
+var button_size = new Size(190, 25);
 var button_corners = new Size(5, 5);
 var button_text_offset = new Point(10, 17);
 var button_hotkey_offset = new Point(button_size.width - 30, button_text_offset.y);
@@ -92,6 +92,7 @@ add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex.'
 add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex.');
 add_toolbox_spacer();
 add_toolbox_button('insert_binary_tree', 'Insert binary tree', 't', 'Click.');
+add_toolbox_button('insert_complete_graph', 'Insert complete graph', null, 'Click.');
 
 tool_cleanup['show_adjacent'] = function () {
 	G.unhighlight_all();
@@ -151,13 +152,16 @@ set_active_tool('add_vertex');
  *  Graph  *
  ***********/
 
+// The size of the visual representation of a vertex.
+var circle_radius = 20;
+
 // Make a separate layer for the edges.
 var edge_layer = new Layer();
 edge_layer.moveBelow(default_layer);
 default_layer.activate();
 
 function Vertex(point, label) {
-	var circle = new Path.Circle(0, 20);
+	var circle = new Path.Circle(0, circle_radius);
 	circle.fillColor = new HsbColor(Math.random() * 360, 0.7, 0.5);
 
 	var label_text = new PointText(circle.position);
@@ -551,6 +555,40 @@ function insert_binary_tree(depth, root_position) {
 	}
 }
 
+function insert_complete_graph(n, center_position) {
+	if (n <= 0) {
+		return;
+	}
+
+	var angle_step, radius;
+
+	if (n == 1) {
+		angle_step = 0;
+		radius = 0;
+	} else {
+		angle_step = 2 * Math.PI / n;
+		radius = 1.5 * circle_radius / Math.sin(angle_step / 2);
+	}
+
+	var angle = 0;
+	var vertices = [];
+
+	for (var i = 0; i < n; i++) {
+		var x = radius * Math.sin(angle);
+		var y = -1 * radius * Math.cos(angle);
+
+		vertices.push(G.add_vertex(center_position + new Point(x, y)));
+
+		angle += angle_step;
+	}
+
+	for (var i = 0; i < vertices.length; i++) {
+		for (var j = i + 1; j < vertices.length; j++) {
+			G.add_edge(vertices[i], vertices[j]);
+		}
+	}
+}
+
 function onMouseMove(event) {
 	if (!tools_enabled) {
 		return;
@@ -763,6 +801,10 @@ function onMouseDown(event) {
 
 		case 'insert_binary_tree':
 			insert_binary_tree(4, event.point);
+			break;
+
+		case 'insert_complete_graph':
+			insert_complete_graph(7, event.point);
 			break;
 	}
 }
