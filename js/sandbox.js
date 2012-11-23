@@ -516,10 +516,12 @@ function stop_search() {
 }
 
 function onKeyDown(event) {
-	if (event.key in tool_hotkey_actions) {
-		set_active_tool(tool_hotkey_actions[event.key]);
+	if (tools_enabled) {
+		if (event.key in tool_hotkey_actions) {
+			set_active_tool(tool_hotkey_actions[event.key]);
 
-		return;
+			return;
+		}
 	}
 }
 
