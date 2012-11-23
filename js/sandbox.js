@@ -1,3 +1,14 @@
+/**********
+ *  Misc  *
+ **********/
+
+// Assume that Function.bind doesn't exist.
+function bind(context, name) {
+	return function () {
+		return context[name].apply(context, arguments);
+	};
+}
+
 /*************
  *  Toolbox  *
  *************/
@@ -82,18 +93,12 @@ add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex
 add_toolbox_spacer();
 add_toolbox_button('insert_binary_tree', 'Insert binary tree', 't', 'Click.');
 
-tool_cleanup['show_adjacent'] = function() {
-	for (var i = 0; i < vertices.length; i++) {
-		unhighlight_vertex(i);
-	}
+tool_cleanup['show_adjacent'] = function () {
+	G.unhighlight_all();
 };
 
-tool_cleanup['show_incident'] = function() {
-	for (var i in edges) {
-		var vertices = parse_edge_name(i);
-
-		unhighlight_edge(vertices[0], vertices[1]);
-	}
+tool_cleanup['show_incident'] = function () {
+	G.unhighlight_all();
 };
 
 function set_button_color(button, color) {
@@ -146,220 +151,302 @@ set_active_tool('add_vertex');
  *  Graph  *
  ***********/
 
-// Array of Group objects corresponding to the vertices.
-var vertices = [];
-
-// Object of Path objects. The keys are of the form 'eA:B' where A and B are
-// indices into the vertices array, and A < B. The first point of the path is
-// always at A, and the last is always at B.
-var edges = {};
-
 // Make a separate layer for the edges.
 var edge_layer = new Layer();
 edge_layer.moveBelow(default_layer);
 default_layer.activate();
 
-function make_edge_name(vertex1, vertex2) {
-	return 'e' + Math.min(vertex1, vertex2) + ':' + Math.max(vertex1, vertex2);
-}
-
-function parse_edge_name(name) {
-	var colon = name.indexOf(':');
-
-	return [parseInt(name.substring(1, colon), 10), parseInt(name.substring(colon+1), 10)];
-}
-
-function vertex_circle(vertex) {
-	return vertices[vertex].children[0];
-}
-
-function vertex_label(vertex) {
-	return vertices[vertex].children[1];
-}
-
-function set_default_vertex_appearance(vertex) {
-	c = vertex_circle(vertex);
-	c.strokeColor = 'black';
-	c.strokeWidth = 0;
-}
-
-function set_default_edge_appearance(name) {
-	edges[name].strokeColor = 'grey';
-	edges[name].strokeWidth = 2;
-}
-
-function add_vertex(coords) {
+function Vertex(point, label) {
 	var circle = new Path.Circle(0, 20);
 	circle.fillColor = new HsbColor(Math.random() * 360, 0.7, 0.5);
 
 	var label_text = new PointText(circle.position);
-	label_text.content = vertices.length;
+	label_text.content = label;
 	label_text.characterStyle.fillColor = 'white';
 	// Attempt to center the label in the vertex.
 	label_text.position.y += 4;
 	label_text.justification = 'center';
 
 	var group = new Group([circle, label_text]);
-	group.position = coords;
+	group.position = point;
 
-	vertices.push(group);
+	this.image = group;
 
-	set_default_vertex_appearance(vertices.length - 1);
+	this.set_default_appearance();
+};
 
-	return vertices.length - 1;
+Vertex.prototype.get_circle = function () {
+	return this.image.children[0];
+};
+
+Vertex.prototype.get_label = function () {
+	return this.image.children[1];
+};
+
+Vertex.prototype.get_position = function () {
+	return this.image.position;
+};
+
+Vertex.prototype.set_position = function (point) {
+	this.image.position = point;
+
+	return this;
+};
+
+Vertex.prototype.set_default_appearance = function () {
+	this.get_circle().strokeColor = 'black';
+	this.get_circle().strokeWidth = 0;
+
+	return this;
+};
+
+Vertex.prototype.set_label = function (text) {
+	this.get_label().content = text;
+
+	return this;
+};
+
+Vertex.prototype.highlight = function () {
+	this.get_circle().strokeColor = new HsbColor(this.get_circle().fillColor);
+	this.get_circle().strokeColor.hue += 180;
+
+	this.get_circle().strokeWidth = 5;
+
+	return this;
+};
+
+Vertex.prototype.unhighlight = function () {
+	this.set_default_appearance();
+
+	return this;
+};
+
+Vertex.prototype.destroy = function () {
+	this.image.remove();
+
+	return this;
+};
+
+function Edge(v1, v2, point1, point2) {
+	edge_layer.activate();
+
+	var path = new Path();
+	path.add(point1);
+	path.add(point2);
+
+	default_layer.activate();
+
+	this.v1 = v1;
+	this.v2 = v2;
+	this.image = path;
+
+	this.set_default_appearance();
 }
 
-function move_vertex(vertex, point) {
-	// Move the vertex itself.
-	vertices[vertex].position = point;
+Edge.prototype.set_default_appearance = function () {
+	this.image.strokeColor = 'grey';
+	this.image.strokeWidth = 2;
 
-	// Move all the edges incident to the vertex.
-	for (var i in edges) {
-		var edge_vertices = parse_edge_name(i);
+	return this;
+};
 
-		if (edge_vertices[0] == vertex) {
-			edges[i].removeSegment(0);
-			edges[i].insert(0, point);
-		} else if (edge_vertices[1] == vertex) {
-			last_segment = edges[i].segments.length - 1;
+Edge.prototype.move_end = function (v, point) {
+	var im = this.image;
 
-			edges[i].removeSegment(last_segment);
-			edges[i].insert(last_segment, point);
-		}
+	if (this.v1 == v) {
+		im.removeSegment(0);
+		im.insert(0, point);
+	} else if (this.v2 == v) {
+		last_segment = im.segments.length - 1;
+
+		im.removeSegment(last_segment);
+		im.insert(last_segment, point);
 	}
+
+	return this;
+};
+
+Edge.prototype.highlight = function () {
+	this.image.strokeColor = 'white';
+	this.image.strokeWidth = 3;
+
+	return this;
+};
+
+Edge.prototype.unhighlight = function () {
+	this.set_default_appearance();
+
+	return this;
+};
+
+Edge.prototype.destroy = function () {
+	this.image.remove();
+
+	return this;
+};
+
+function Graph() {
+	// Array of Group objects corresponding to the vertices.
+	this.vertices = [];
+
+	// Array of objects of Edge objects, implementing an adjacency list.
+	//
+	// Each element corresponds to the element of the vertices array with the same
+	// index. The keys of each element are also indices into the vertices array,
+	// where the presence of a key signifies the existence of an edge between the
+	// two vertices.
+	//
+	// The values of each element are the Edge objects for the edges. Note that
+	// each is stored twice (once in the list of each vertex incident to the edge).
+	this.edges = [];
 }
 
-function remove_vertex(vertex) {
+Graph.prototype.add_vertex = function (point) {
+	var n = this.vertices.length;
+	var v = new Vertex(point, n);
+
+	this.vertices.push(v);
+	this.edges.push({});
+
+	return n;
+};
+
+Graph.prototype.get_vertex = function (v) {
+	return this.vertices[v];
+};
+
+Graph.prototype.move_vertex = function (v, point) {
+	this.vertices[v].set_position(point);
+
+	for (var i in this.edges[v]) {
+		this.edges[v][i].move_end(v, point);
+	}
+
+	return this;
+};
+
+Graph.prototype.remove_vertex = function (v) {
 	// Get rid of the vertex by shuffling all the vertices that have greater
 	// indices.
-	vertices[vertex].remove();
-	vertices.splice(vertex, 1);
+	this.vertices[v].destroy();
+	this.vertices.splice(v, 1);
 
 	// Update all the labels on the later vertices.
-	for (var i = vertex; i < vertices.length; i++) {
-		vertex_label(i).content = i;
+	for (var i = v; i < this.vertices.length; i++) {
+		this.vertices[i].set_label(i);
 	}
 
-	// Keep track of all the edges that will need to be re-created with new
-	// end-points.
-	var temp_edges = [];
+	// Remove all the edges connected to this vertex.
+	for (var i in this.edges[v]) {
+		this.edges[v][i].destroy();
 
-	for (var i in edges) {
-		var edge_vertices = parse_edge_name(i);
+		delete this.edges[i][v];
+	}
 
-		if (edge_vertices[0] == vertex || edge_vertices[1] == vertex) {
-			// This edge doesn't exist anymore, so just remove it.
-			delete_edge(edge_vertices[0], edge_vertices[1]);
-		} else if (edge_vertices[0] > vertex || edge_vertices[1] > vertex) {
-			// This edge still exists, but at least one of the vertices has had
-			// its index decremented.
-			var v1 = edge_vertices[0] - (edge_vertices[0] > vertex ? 1 : 0);
-			var v2 = edge_vertices[1] - (edge_vertices[1] > vertex ? 1 : 0);
+	this.edges.splice(v, 1);
 
-			temp_edges.push([v1, v2]);
+	// Adjust all the later vertex indices.
+	for (var i = 0; i < this.edges.length; i++) {
+		var new_edge = {};
 
-			delete_edge(edge_vertices[0], edge_vertices[1]);
+		for (var j in this.edges[i]) {
+			var edge = this.edges[i][j];
+
+			new_edge[j > v ? j - 1 : j] = edge;
+
+			// Only update each Edge object once.
+			if (i < j) {
+				if (edge.v1 > v) {
+					edge.v1--;
+				}
+
+				if (edge.v2 > v) {
+					edge.v2--;
+				}
+			}
 		}
+
+		this.edges[i] = new_edge;
 	}
 
-	// Re-create the necessary edges.
-	for (var i = 0; i < temp_edges.length; i++) {
-		add_edge(temp_edges[i][0], temp_edges[i][1]);
+	return this;
+};
+
+Graph.prototype.add_edge = function (v1, v2) {
+	// Not if it already exists or if it connects a vertex with itself.
+	if (v2 in this.edges[v1] || v1 == v2) {
+		return;
 	}
+
+	var e = new Edge(v1, v2, this.vertices[v1].get_position(), this.vertices[v2].get_position());
+
+	this.edges[v1][v2] = e;
+	this.edges[v2][v1] = e;
+
+	return this;
+};
+
+Graph.prototype.get_edge = function (v1, v2) {
+	return this.edges[v1][v2];
+};
+
+Graph.prototype.remove_edge = function (v1, v2) {
+	// Not if it doesn't exist.
+	if (!(v2 in this.edges[v1])) {
+		return;
+	}
+
+	this.edges[v1][v2].destroy();
+
+	delete this.edges[v1][v2];
+	delete this.edges[v2][v1];
+
+	return this;
+};
+
+Graph.prototype.neighbours = function (v) {
+	var result = [];
+
+	for (var i in this.edges[v]) {
+		result.push(i);
+	}
+
+	return result;
+};
+
+// Remove all vertices and edges.
+Graph.prototype.clear = function () {
+	while (this.vertices.length > 0) {
+		this.remove_vertex(0);
+	}
+
+	return this;
 }
 
 // Get the vertex sitting at the given position, if there is one.
-function vertex_at_posn(point) {
-	for (var i = vertices.length - 1; i >= 0; i--) {
-		if (vertices[i].hitTest(point)) {
+Graph.prototype.vertex_at_position = function (point) {
+	for (var i = this.vertices.length - 1; i >= 0; i--) {
+		if (this.vertices[i].image.hitTest(point)) {
 			return i;
 		}
 	}
 
 	return false;
-}
+};
 
-function vertex_neighbours(vertex) {
-	var result = [];
+Graph.prototype.unhighlight_all = function () {
+	for (var i = 0; i < this.vertices.length; i++) {
+		this.vertices[i].unhighlight();
 
-	for (var i in edges) {
-		var edge_vertices = parse_edge_name(i);
-
-		if (edge_vertices[0] == vertex) {
-			result.push(edge_vertices[1]);
-		} else if (edge_vertices[1] == vertex) {
-			result.push(edge_vertices[0]);
+		for (var j in this.edges[i]) {
+			this.edges[i][j].unhighlight();
 		}
 	}
 
-	return result;
-}
+	return this;
+};
 
-function highlight_vertex(vertex) {
-	vertex_circle(vertex).strokeColor = new HsbColor(vertex_circle(vertex).fillColor);
-	vertex_circle(vertex).strokeColor.hue += 180;
-
-	vertex_circle(vertex).strokeWidth = 5;
-}
-
-function unhighlight_vertex(vertex) {
-	set_default_vertex_appearance(vertex);
-}
-
-function add_edge(start, end) {
-	var name = make_edge_name(start, end);
-
-	// Not if it already exists or if it connects a vertex with itself.
-	if (edges[name] || start == end) {
-		return;
-	}
-
-	// Make sure the path is always in the same direction as the edge name.
-	if (start > end) {
-		temp = start;
-		start = end;
-		end = temp;
-	}
-
-	edge_layer.activate();
-
-	var path = new Path();
-	path.strokeColor = 'grey';
-
-	path.add(vertex_circle(start).position);
-	path.add(vertex_circle(end).position);
-
-	edges[name] = path;
-
-	default_layer.activate();
-
-	set_default_edge_appearance(name);
-}
-
-function delete_edge(start, end) {
-	var name = make_edge_name(start, end);
-
-	// Not if it doesn't exist.
-	if (!edges[name]) {
-		return;
-	}
-
-	edges[name].remove();
-	delete edges[name];
-}
-
-function highlight_edge(vertex1, vertex2) {
-	var name = make_edge_name(vertex1, vertex2);
-
-	edges[name].strokeColor = 'white';
-	edges[name].strokeWidth = 3;
-}
-
-function unhighlight_edge(vertex1, vertex2) {
-	var name = make_edge_name(vertex1, vertex2);
-
-	set_default_edge_appearance(name);
-}
+var G = new Graph();
 
 /*****************
  *  Interaction  *
@@ -385,17 +472,17 @@ function get_time() {
 function start_edge_action(start_vertex, color, end_function) {
 	var path = new Path();
 	path.strokeColor = color;
-	path.add(vertex_circle(start_vertex).position);
+	path.add(G.get_vertex(start_vertex).get_position());
 
-	dragFunction = function(point) {
+	dragFunction = function (point) {
 		path.add(point);
 		path.smooth();
 	}
 
-	releaseFunction = function(point) {
+	releaseFunction = function (point) {
 		path.remove();
 
-		var end_vertex = vertex_at_posn(point);
+		var end_vertex = G.vertex_at_position(point);
 
 		if (end_vertex !== false) {
 			end_function(start_vertex, end_vertex);
@@ -412,7 +499,7 @@ function start_search(search_step) {
 
 	var next_frame = get_time() + animation_delay;
 
-	frameFunction = function() {
+	frameFunction = function () {
 		if (get_time() < next_frame) {
 			return;
 		} else {
@@ -446,12 +533,12 @@ function insert_binary_tree(depth, root_position) {
 		var left_pos = -1 * depth_step * (Math.pow(2, i - 1) - 1 / 2);
 
 		for (var j = 0; j < Math.pow(2, i); j++) {
-			var cur = add_vertex(root_position + new Point(left_pos, 50 * i));
+			var cur = G.add_vertex(root_position + new Point(left_pos, 50 * i));
 			next_parents.push(cur);
 
 			// The root doesn't have any parents.
 			if (parents.length > 0) {
-				add_edge(cur, parents[Math.floor(j / 2)]);
+				G.add_edge(cur, parents[Math.floor(j / 2)]);
 			}
 
 			left_pos += depth_step;
@@ -469,7 +556,7 @@ function onMouseMove(event) {
 
 	switch (current_tool) {
 		case 'show_adjacent':
-			var vertex = vertex_at_posn(event.point);
+			var vertex = G.vertex_at_position(event.point);
 
 			if (vertex === false) {
 				break;
@@ -477,16 +564,16 @@ function onMouseMove(event) {
 
 			tool_cleanup['show_adjacent']();
 
-			var neighbours = vertex_neighbours(vertex);
+			var neighbours = G.neighbours(vertex);
 
 			for (var i = 0; i < neighbours.length; i++) {
-				highlight_vertex(neighbours[i]);
+				G.get_vertex(neighbours[i]).highlight();
 			}
 
 			break;
 
 		case 'show_incident':
-			var vertex = vertex_at_posn(event.point);
+			var vertex = G.vertex_at_position(event.point);
 
 			if (vertex === false) {
 				break;
@@ -494,10 +581,10 @@ function onMouseMove(event) {
 
 			tool_cleanup['show_incident']();
 
-			var neighbours = vertex_neighbours(vertex);
+			var neighbours = G.neighbours(vertex);
 
 			for (var i = 0; i < neighbours.length; i++) {
-				highlight_edge(vertex, neighbours[i]);
+				G.get_edge(vertex, neighbours[i]).highlight();
 			}
 
 			break;
@@ -521,21 +608,21 @@ function onMouseDown(event) {
 	// Clicked elsewhere, so make use of the current tool.
 	switch (current_tool) {
 		case 'add_vertex':
-			add_vertex(event.point);
+			G.add_vertex(event.point);
 			break;
 
 		case 'move_vertex':
-			var vertex = vertex_at_posn(event.point);
+			var vertex = G.vertex_at_position(event.point);
 
 			if (vertex === false) {
 				break;
 			}
 
-			dragFunction = function(point) {
-				move_vertex(vertex, point);
+			dragFunction = function (point) {
+				G.move_vertex(vertex, point);
 			}
 
-			releaseFunction = function(point) {
+			releaseFunction = function (point) {
 				dragFunction = false;
 				releaseFunction = false;
 			}
@@ -543,36 +630,34 @@ function onMouseDown(event) {
 
 		case 'remove_vertex':
 			if (Key.isDown('shift')) {
-				while (vertices.length > 0) {
-					remove_vertex(0);
-				}
+				G.clear();
 			} else {
-				var vertex = vertex_at_posn(event.point);
+				var vertex = G.vertex_at_position(event.point);
 
 				if (vertex !== false) {
-					remove_vertex(vertex);
+					G.remove_vertex(vertex);
 				}
 			}
 			break;
 
 		case 'add_edge':
-			var vertex = vertex_at_posn(event.point);
+			var vertex = G.vertex_at_position(event.point);
 
 			if (vertex !== false) {
-				start_edge_action(vertex, '#00ff00', add_edge);
+				start_edge_action(vertex, '#00ff00', bind(G, 'add_edge'));
 			}
 			break;
 
 		case 'delete_edge':
-			var vertex = vertex_at_posn(event.point);
+			var vertex = G.vertex_at_position(event.point);
 
 			if (vertex !== false) {
-				start_edge_action(vertex, '#ff0000', delete_edge);
+				start_edge_action(vertex, '#ff0000', bind(G, 'remove_edge'));
 			}
 			break;
 
 		case 'run_dfs':
-			var vertex = vertex_at_posn(event.point);
+			var vertex = G.vertex_at_position(event.point);
 
 			if (vertex === false) {
 				break;
@@ -581,15 +666,12 @@ function onMouseDown(event) {
 			var visited_vertices = {};
 			var vertex_stack = [vertex];
 
-			highlight_vertex(vertex);
+			G.get_vertex(vertex).highlight();
 
 			function dfs_step() {
 				// Are we done with the search?
 				if (vertex_stack.length == 0) {
-					// Unhighlight all vertices.
-					for (var i in visited_vertices) {
-						unhighlight_vertex(i);
-					}
+					G.unhighlight_all();
 
 					stop_search();
 
@@ -601,12 +683,13 @@ function onMouseDown(event) {
 				visited_vertices[current_vertex] = true;
 
 				// Visit the next neighbour.
-				var neighbours = vertex_neighbours(current_vertex);
+				var neighbours = G.neighbours(current_vertex);
 
 				for (var i = 0; i < neighbours.length; i++) {
 					if (!(neighbours[i] in visited_vertices)) {
-						highlight_vertex(neighbours[i]);
-						highlight_edge(neighbours[i], current_vertex);
+						G.get_vertex(neighbours[i]).highlight();
+						G.get_edge(neighbours[i], current_vertex).highlight();
+
 						vertex_stack.push(neighbours[i]);
 
 						return;
@@ -618,7 +701,7 @@ function onMouseDown(event) {
 
 				if (vertex_stack.length > 0) {
 					// Unhighlight the edge along which we're backtracking.
-					unhighlight_edge(current_vertex, vertex_stack[vertex_stack.length - 1]);
+					G.get_edge(current_vertex, vertex_stack[vertex_stack.length - 1]).unhighlight();
 				}
 			}
 
@@ -626,7 +709,7 @@ function onMouseDown(event) {
 			break;
 
 		case 'run_bfs':
-			var vertex = vertex_at_posn(event.point);
+			var vertex = G.vertex_at_position(event.point);
 
 			if (vertex === false) {
 				break;
@@ -640,10 +723,7 @@ function onMouseDown(event) {
 			function bfs_step() {
 				// Are we done with the search?
 				if (vertex_queue.length == 0) {
-					// Unhighlight all vertices and edges.
-					for (var i in visited_vertices) {
-						unhighlight_vertex(i);
-					}
+					G.unhighlight_all();
 
 					stop_search();
 
@@ -652,20 +732,20 @@ function onMouseDown(event) {
 
 				// Visit the first vertex in the queue.
 				var current_vertex = vertex_queue.splice(0, 1)[0];
-				highlight_vertex(current_vertex);
+				G.get_vertex(current_vertex).highlight();
 
 				// Unhighlight the edge that caused it to be visited.
 				if (highlighted_edges.length > 0) {
 					var edge = highlighted_edges.splice(0, 1)[0];
-					unhighlight_edge(edge[0], edge[1]);
+					G.get_edge(edge[0], edge[1]).unhighlight();
 				}
 
 				// Queue all the neighbours.
-				var neighbours = vertex_neighbours(current_vertex);
+				var neighbours = G.neighbours(current_vertex);
 
 				for (var i = 0; i < neighbours.length; i++) {
 					if (!(neighbours[i] in visited_vertices)) {
-						highlight_edge(neighbours[i], current_vertex);
+						G.get_edge(neighbours[i], current_vertex).highlight();
 						highlighted_edges.push([neighbours[i], current_vertex]);
 
 						vertex_queue.push(neighbours[i]);
