@@ -2,6 +2,12 @@
  *  Toolbox  *
  *************/
 
+// Make a separate layer for the toolbox.
+var default_layer = project.activeLayer;
+var toolbox_layer = new Layer();
+toolbox_layer.moveAbove(default_layer);
+default_layer.activate();
+
 var current_tool;
 var tools_enabled = true;
 
@@ -26,6 +32,8 @@ tool_help_text.characterStyle.fillColor = 'white';
 function make_button(label, hotkey, posn) {
 	var rectangle = new Rectangle(posn, button_size);
 
+	toolbox_layer.activate();
+
 	var button = new Path.RoundRectangle(rectangle, button_corners);
 	button.fillColor = button_color_inactive;
 
@@ -39,7 +47,11 @@ function make_button(label, hotkey, posn) {
 	}
 	hotkey_text.characterStyle.fillColor = 'white';
 
-	return new Group([button, label_text, hotkey_text]);
+	var g = new Group([button, label_text, hotkey_text]);
+
+	default_layer.activate();
+
+	return g;
 }
 
 function add_toolbox_button(name, label, hotkey, help_text) {
@@ -143,7 +155,6 @@ var vertices = [];
 var edges = {};
 
 // Make a separate layer for the edges.
-var default_layer = project.activeLayer;
 var edge_layer = new Layer();
 edge_layer.moveBelow(default_layer);
 default_layer.activate();
