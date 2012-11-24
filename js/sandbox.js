@@ -154,7 +154,130 @@ set_active_tool('add_vertex');
  *  Animation control  *
  ***********************/
 
+var animating = false;
+var animation_paused = false;
+
 var frame_function;
+var frame_function_paused;
+
+// Callback to execute at the end of the animation.
+var animation_end;
+
+var animation_control_button_color = new HsbColor(200, 0.6, 0.55);
+
+var animation_control_button_size = new Size(60, 50);
+var animation_control_button_text_offset = new Point(animation_control_button_size.width / 2, 19);
+var animation_control_button_hotkey_offset = new Point(animation_control_button_size.width / 2, animation_control_button_text_offset.y + 20);
+
+toolbox_layer.activate();
+var animation_control_buttons_group = new Group();
+animation_control_buttons_group.visible = false;
+default_layer.activate();
+
+var animation_control_buttons = {};
+var animation_control_button_posn = new Point(toolbox_button_posn_init.x + button_size.width + 10, toolbox_button_posn_init.y);
+
+var animation_control_hotkey_actions = {};
+
+function hotkey_display(hotkey) {
+	if (hotkey == 'space') {
+		return 'Space';
+	} else {
+		return hotkey.toUpperCase();
+	}
+}
+
+function make_animation_control_button(label, hotkey, posn) {
+	var rectangle = new Rectangle(posn, animation_control_button_size);
+
+	var button = new Path.RoundRectangle(rectangle, button_corners);
+	button.fillColor = animation_control_button_color;
+
+	var label_text = new PointText(rectangle.point + animation_control_button_text_offset);
+	label_text.justification = 'center';
+	label_text.content = label;
+	label_text.characterStyle.fillColor = 'white';
+
+	var hotkey_text = new PointText(rectangle.point + animation_control_button_hotkey_offset);
+	if (hotkey) {
+		hotkey_text.content = '[' + hotkey_display(hotkey) + ']';
+	}
+	hotkey_text.justification = 'center';
+	hotkey_text.characterStyle.fillColor = 'white';
+
+	return new Group([button, label_text, hotkey_text]);
+}
+
+function add_animation_control_button(name, label, hotkey) {
+	animation_control_buttons[name] = make_animation_control_button(label, hotkey, animation_control_button_posn);
+	animation_control_buttons_group.addChild(animation_control_buttons[name]);
+
+	if (hotkey) {
+		animation_control_hotkey_actions[hotkey] = name;
+	}
+
+	animation_control_button_posn.x += animation_control_button_size.width + 5;
+}
+
+function change_animation_control_button_label(name, label) {
+	animation_control_buttons['play_pause'].children[1].content = label;
+}
+
+add_animation_control_button('stop', 'Stop', 'q');
+add_animation_control_button('play_pause', 'Pause', 'space');
+
+function animation_setup() {
+	animating = true;
+	animation_control_buttons_group.visible = true;
+}
+
+function animation_teardown() {
+	if (animation_end) {
+		animation_end();
+	}
+
+	animating = false;
+	animation_control_buttons_group.visible = false;
+
+	set_animation_pause(false);
+
+	frame_function = false;
+	animation_end = false;
+}
+
+function toggle_animation_pause() {
+	animation_paused = !animation_paused;
+
+	if (animation_paused) {
+		frame_function_paused = frame_function;
+		frame_function = false;
+
+		change_animation_control_button_label('play_pause', 'Play');
+	} else {
+		frame_function = frame_function_paused;
+		frame_function_paused = false;
+
+		change_animation_control_button_label('play_pause', 'Pause');
+	}
+}
+
+// Pause if target; unpause if !target.
+function set_animation_pause(target) {
+	if (animation_paused != target) {
+		toggle_animation_pause();
+	}
+}
+
+function animation_action_dispatch(name) {
+	switch (name) {
+		case 'stop':
+			animation_teardown();
+			return;
+		case 'play_pause':
+			toggle_animation_pause();
+			return;
+	}
+}
 
 function onFrame(event) {
 	if (frame_function) {
@@ -556,6 +679,7 @@ function start_edge_action(start_vertex, color, end_function) {
 // Start a search animation with the given step function.
 function start_search(search_step) {
 	disable_tools();
+	animation_setup();
 
 	var next_frame = get_time() + animation_delay;
 
@@ -568,17 +692,26 @@ function start_search(search_step) {
 
 		search_step();
 	}
-}
 
-function stop_search() {
-	enable_tools();
-	frame_function = false;
+	animation_end = function () {
+		G.unhighlight_all();
+
+		enable_tools();
+	}
 }
 
 function onKeyDown(event) {
 	if (tools_enabled) {
 		if (event.key in tool_hotkey_actions) {
 			set_active_tool(tool_hotkey_actions[event.key]);
+
+			return;
+		}
+	}
+
+	if (animating) {
+		if (event.key in animation_control_hotkey_actions) {
+			animation_action_dispatch(animation_control_hotkey_actions[event.key]);
 
 			return;
 		}
@@ -782,9 +915,7 @@ function onMouseDown(event) {
 				function dfs_step() {
 					// Are we done with the search?
 					if (vertex_stack.length == 0) {
-						G.unhighlight_all();
-
-						stop_search();
+						animation_teardown();
 
 						return;
 					}
@@ -834,9 +965,7 @@ function onMouseDown(event) {
 				function bfs_step() {
 					// Are we done with the search?
 					if (vertex_queue.length == 0) {
-						G.unhighlight_all();
-
-						stop_search();
+						animation_teardown();
 
 						return;
 					}
@@ -881,6 +1010,16 @@ function onMouseDown(event) {
 			case 'insert_random_graph':
 				insert_random_graph(12, event.point);
 				return;
+		}
+	}
+
+	if (animating) {
+		for (var i in animation_control_buttons) {
+			if (animation_control_buttons[i].hitTest(event.point)) {
+				animation_action_dispatch(i);
+
+				return;
+			}
 		}
 	}
 }
