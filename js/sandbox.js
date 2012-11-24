@@ -35,7 +35,8 @@ var toolbox_buttons_group = new Group();
 default_layer.activate();
 
 var toolbox_buttons = {};
-var toolbox_button_posn = new Point(10, 10);
+var toolbox_button_posn_init = new Point(5, 5);
+var toolbox_button_posn = new Point(toolbox_button_posn_init);
 
 var tool_help = {};
 var tool_hotkey_actions = {};
@@ -148,6 +149,18 @@ function disable_tools() {
 }
 
 set_active_tool('add_vertex');
+
+/***********************
+ *  Animation control  *
+ ***********************/
+
+var frame_function;
+
+function onFrame(event) {
+	if (frame_function) {
+		frame_function();
+	}
+}
 
 /***********
  *  Graph  *
@@ -509,7 +522,6 @@ var animation_delay = 500;
 // Callbacks, configured elsewhere.
 var dragFunction;
 var releaseFunction;
-var frameFunction;
 
 function get_time() {
 	return new Date().getTime();
@@ -547,7 +559,7 @@ function start_search(search_step) {
 
 	var next_frame = get_time() + animation_delay;
 
-	frameFunction = function () {
+	frame_function = function () {
 		if (get_time() < next_frame) {
 			return;
 		} else {
@@ -560,7 +572,7 @@ function start_search(search_step) {
 
 function stop_search() {
 	enable_tools();
-	frameFunction = false;
+	frame_function = false;
 }
 
 function onKeyDown(event) {
@@ -694,184 +706,182 @@ function onMouseMove(event) {
 }
 
 function onMouseDown(event) {
-	if (!tools_enabled) {
-		return;
-	}
+	if (tools_enabled) {
+		// Toolbox buttons always take precedence.
+		for (var i in toolbox_buttons) {
+			if (toolbox_buttons[i].hitTest(event.point)) {
+				set_active_tool(i);
 
-	// Toolbox buttons always take precedence.
-	for (var i in toolbox_buttons) {
-		if (toolbox_buttons[i].hitTest(event.point)) {
-			set_active_tool(i);
-
-			return;
+				return;
+			}
 		}
-	}
 
-	// Clicked elsewhere, so make use of the current tool.
-	switch (current_tool) {
-		case 'add_vertex':
-			G.add_vertex(event.point);
-			break;
+		// Clicked elsewhere, so make use of the current tool.
+		switch (current_tool) {
+			case 'add_vertex':
+				G.add_vertex(event.point);
+				return;
 
-		case 'move_vertex':
-			var vertex = G.vertex_at_position(event.point);
+			case 'move_vertex':
+				var vertex = G.vertex_at_position(event.point);
 
-			if (vertex === false) {
-				break;
-			}
+				if (vertex === false) {
+					return;
+				}
 
-			dragFunction = function (point) {
-				G.move_vertex(vertex, point);
-			}
+				dragFunction = function (point) {
+					G.move_vertex(vertex, point);
+				}
 
-			releaseFunction = function (point) {
-				dragFunction = false;
-				releaseFunction = false;
-			}
-			break;
+				releaseFunction = function (point) {
+					dragFunction = false;
+					releaseFunction = false;
+				}
+				return;
 
-		case 'remove_vertex':
-			if (Key.isDown('shift')) {
-				G.clear();
-			} else {
+			case 'remove_vertex':
+				if (Key.isDown('shift')) {
+					G.clear();
+				} else {
+					var vertex = G.vertex_at_position(event.point);
+
+					if (vertex !== false) {
+						G.remove_vertex(vertex);
+					}
+				}
+				return;
+
+			case 'add_edge':
 				var vertex = G.vertex_at_position(event.point);
 
 				if (vertex !== false) {
-					G.remove_vertex(vertex);
+					start_edge_action(vertex, '#00ff00', bind(G, 'add_edge'));
 				}
-			}
-			break;
+				return;
 
-		case 'add_edge':
-			var vertex = G.vertex_at_position(event.point);
+			case 'delete_edge':
+				var vertex = G.vertex_at_position(event.point);
 
-			if (vertex !== false) {
-				start_edge_action(vertex, '#00ff00', bind(G, 'add_edge'));
-			}
-			break;
+				if (vertex !== false) {
+					start_edge_action(vertex, '#ff0000', bind(G, 'remove_edge'));
+				}
+				return;
 
-		case 'delete_edge':
-			var vertex = G.vertex_at_position(event.point);
+			case 'run_dfs':
+				var vertex = G.vertex_at_position(event.point);
 
-			if (vertex !== false) {
-				start_edge_action(vertex, '#ff0000', bind(G, 'remove_edge'));
-			}
-			break;
-
-		case 'run_dfs':
-			var vertex = G.vertex_at_position(event.point);
-
-			if (vertex === false) {
-				break;
-			}
-
-			var visited_vertices = {};
-			var vertex_stack = [vertex];
-
-			G.get_vertex(vertex).highlight();
-
-			function dfs_step() {
-				// Are we done with the search?
-				if (vertex_stack.length == 0) {
-					G.unhighlight_all();
-
-					stop_search();
-
+				if (vertex === false) {
 					return;
 				}
 
-				// Visit the top-most vertex on the stack.
-				var current_vertex = vertex_stack[vertex_stack.length - 1];
-				visited_vertices[current_vertex] = true;
+				var visited_vertices = {};
+				var vertex_stack = [vertex];
 
-				// Visit the next neighbour.
-				var neighbours = G.neighbours(current_vertex);
+				G.get_vertex(vertex).highlight();
 
-				for (var i = 0; i < neighbours.length; i++) {
-					if (!(neighbours[i] in visited_vertices)) {
-						G.get_vertex(neighbours[i]).highlight();
-						G.get_edge(neighbours[i], current_vertex).highlight();
+				function dfs_step() {
+					// Are we done with the search?
+					if (vertex_stack.length == 0) {
+						G.unhighlight_all();
 
-						vertex_stack.push(neighbours[i]);
+						stop_search();
 
 						return;
 					}
+
+					// Visit the top-most vertex on the stack.
+					var current_vertex = vertex_stack[vertex_stack.length - 1];
+					visited_vertices[current_vertex] = true;
+
+					// Visit the next neighbour.
+					var neighbours = G.neighbours(current_vertex);
+
+					for (var i = 0; i < neighbours.length; i++) {
+						if (!(neighbours[i] in visited_vertices)) {
+							G.get_vertex(neighbours[i]).highlight();
+							G.get_edge(neighbours[i], current_vertex).highlight();
+
+							vertex_stack.push(neighbours[i]);
+
+							return;
+						}
+					}
+
+					// All neighbours have been visited, so backtrack.
+					vertex_stack.pop();
+
+					if (vertex_stack.length > 0) {
+						// Unhighlight the edge along which we're backtracking.
+						G.get_edge(current_vertex, vertex_stack[vertex_stack.length - 1]).unhighlight();
+					}
 				}
 
-				// All neighbours have been visited, so backtrack.
-				vertex_stack.pop();
+				start_search(dfs_step);
+				return;
 
-				if (vertex_stack.length > 0) {
-					// Unhighlight the edge along which we're backtracking.
-					G.get_edge(current_vertex, vertex_stack[vertex_stack.length - 1]).unhighlight();
-				}
-			}
+			case 'run_bfs':
+				var vertex = G.vertex_at_position(event.point);
 
-			start_search(dfs_step);
-			break;
-
-		case 'run_bfs':
-			var vertex = G.vertex_at_position(event.point);
-
-			if (vertex === false) {
-				break;
-			}
-
-			var visited_vertices = {};
-			visited_vertices[vertex] = true;
-			var highlighted_edges = [];
-			var vertex_queue = [vertex];
-
-			function bfs_step() {
-				// Are we done with the search?
-				if (vertex_queue.length == 0) {
-					G.unhighlight_all();
-
-					stop_search();
-
+				if (vertex === false) {
 					return;
 				}
 
-				// Visit the first vertex in the queue.
-				var current_vertex = vertex_queue.splice(0, 1)[0];
-				G.get_vertex(current_vertex).highlight();
+				var visited_vertices = {};
+				visited_vertices[vertex] = true;
+				var highlighted_edges = [];
+				var vertex_queue = [vertex];
 
-				// Unhighlight the edge that caused it to be visited.
-				if (highlighted_edges.length > 0) {
-					var edge = highlighted_edges.splice(0, 1)[0];
-					G.get_edge(edge[0], edge[1]).unhighlight();
-				}
+				function bfs_step() {
+					// Are we done with the search?
+					if (vertex_queue.length == 0) {
+						G.unhighlight_all();
 
-				// Queue all the neighbours.
-				var neighbours = G.neighbours(current_vertex);
+						stop_search();
 
-				for (var i = 0; i < neighbours.length; i++) {
-					if (!(neighbours[i] in visited_vertices)) {
-						G.get_edge(neighbours[i], current_vertex).highlight();
-						highlighted_edges.push([neighbours[i], current_vertex]);
+						return;
+					}
 
-						vertex_queue.push(neighbours[i]);
+					// Visit the first vertex in the queue.
+					var current_vertex = vertex_queue.splice(0, 1)[0];
+					G.get_vertex(current_vertex).highlight();
 
-						// Make sure that it doesn't get queued again.
-						visited_vertices[neighbours[i]] = true;
+					// Unhighlight the edge that caused it to be visited.
+					if (highlighted_edges.length > 0) {
+						var edge = highlighted_edges.splice(0, 1)[0];
+						G.get_edge(edge[0], edge[1]).unhighlight();
+					}
+
+					// Queue all the neighbours.
+					var neighbours = G.neighbours(current_vertex);
+
+					for (var i = 0; i < neighbours.length; i++) {
+						if (!(neighbours[i] in visited_vertices)) {
+							G.get_edge(neighbours[i], current_vertex).highlight();
+							highlighted_edges.push([neighbours[i], current_vertex]);
+
+							vertex_queue.push(neighbours[i]);
+
+							// Make sure that it doesn't get queued again.
+							visited_vertices[neighbours[i]] = true;
+						}
 					}
 				}
-			}
 
-			start_search(bfs_step);
-			break;
+				start_search(bfs_step);
+				return;
 
-		case 'insert_binary_tree':
-			insert_binary_tree(4, event.point);
-			break;
+			case 'insert_binary_tree':
+				insert_binary_tree(4, event.point);
+				return;
 
-		case 'insert_complete_graph':
-			insert_complete_graph(7, event.point);
-			break;
+			case 'insert_complete_graph':
+				insert_complete_graph(7, event.point);
+				return;
 
-		case 'insert_random_graph':
-			insert_random_graph(12, event.point);
-			break;
+			case 'insert_random_graph':
+				insert_random_graph(12, event.point);
+				return;
+		}
 	}
 }
 
@@ -884,11 +894,5 @@ function onMouseDrag(event) {
 function onMouseUp(event) {
 	if (releaseFunction) {
 		releaseFunction(event.point);
-	}
-}
-
-function onFrame(event) {
-	if (frameFunction) {
-		frameFunction();
 	}
 }
