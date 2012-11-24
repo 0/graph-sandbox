@@ -913,13 +913,6 @@ function onMouseDown(event) {
 				G.get_vertex(vertex).highlight();
 
 				function dfs_step() {
-					// Are we done with the search?
-					if (vertex_stack.length == 0) {
-						animation_teardown();
-
-						return;
-					}
-
 					// Visit the top-most vertex on the stack.
 					var current_vertex = vertex_stack[vertex_stack.length - 1];
 					visited_vertices[current_vertex] = true;
@@ -944,6 +937,9 @@ function onMouseDown(event) {
 					if (vertex_stack.length > 0) {
 						// Unhighlight the edge along which we're backtracking.
 						G.get_edge(current_vertex, vertex_stack[vertex_stack.length - 1]).unhighlight();
+					} else {
+						// We're done with the search.
+						animation_teardown();
 					}
 				}
 
