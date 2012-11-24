@@ -30,6 +30,10 @@ var button_corners = new Size(5, 5);
 var button_text_offset = new Point(10, 17);
 var button_hotkey_offset = new Point(button_size.width - 30, button_text_offset.y);
 
+toolbox_layer.activate();
+var toolbox_buttons_group = new Group();
+default_layer.activate();
+
 var toolbox_buttons = {};
 var toolbox_button_posn = new Point(10, 10);
 
@@ -42,8 +46,6 @@ tool_help_text.characterStyle.fillColor = 'white';
 
 function make_button(label, hotkey, posn) {
 	var rectangle = new Rectangle(posn, button_size);
-
-	toolbox_layer.activate();
 
 	var button = new Path.RoundRectangle(rectangle, button_corners);
 	button.fillColor = button_color_inactive;
@@ -58,15 +60,13 @@ function make_button(label, hotkey, posn) {
 	}
 	hotkey_text.characterStyle.fillColor = 'white';
 
-	var g = new Group([button, label_text, hotkey_text]);
-
-	default_layer.activate();
-
-	return g;
+	return new Group([button, label_text, hotkey_text]);
 }
 
 function add_toolbox_button(name, label, hotkey, help_text) {
 	toolbox_buttons[name] = make_button(label, hotkey, toolbox_button_posn);
+	toolbox_buttons_group.addChild(toolbox_buttons[name]);
+
 	if (hotkey) {
 		tool_hotkey_actions[hotkey] = name;
 	}
