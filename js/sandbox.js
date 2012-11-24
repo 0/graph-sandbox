@@ -154,14 +154,18 @@ set_active_tool('add_vertex');
  *  Animation control  *
  ***********************/
 
+// Number of milliseconds to sleep between animation frames.
+var animation_delay = 500;
+
 var animating = false;
-var animation_paused = false;
+var next_frame;
 
-var frame_function;
-var frame_function_paused;
-
-// Callback to execute at the end of the animation.
+// Callbacks to execute at various points in the animation.
+var animation_frame;
 var animation_end;
+
+// A reference to the animation_frame function for when we're paused.
+var animation_frame_paused;
 
 var animation_control_button_color = new HsbColor(200, 0.6, 0.55);
 
@@ -226,9 +230,17 @@ function change_animation_control_button_label(name, label) {
 add_animation_control_button('stop', 'Stop', 'q');
 add_animation_control_button('play_pause', 'Pause', 'space');
 
+function get_time() {
+	return new Date().getTime();
+}
+
 function animation_setup() {
+	next_frame = get_time() + animation_delay;
+
 	animating = true;
 	animation_control_buttons_group.visible = true;
+
+	animation_unpause();
 }
 
 function animation_teardown() {
@@ -239,32 +251,29 @@ function animation_teardown() {
 	animating = false;
 	animation_control_buttons_group.visible = false;
 
-	set_animation_pause(false);
-
-	frame_function = false;
+	animation_frame = false;
 	animation_end = false;
 }
 
-function toggle_animation_pause() {
-	animation_paused = !animation_paused;
+function animation_pause() {
+	animation_frame_paused = animation_frame;
+	animation_frame = false;
 
-	if (animation_paused) {
-		frame_function_paused = frame_function;
-		frame_function = false;
-
-		change_animation_control_button_label('play_pause', 'Play');
-	} else {
-		frame_function = frame_function_paused;
-		frame_function_paused = false;
-
-		change_animation_control_button_label('play_pause', 'Pause');
-	}
+	change_animation_control_button_label('play_pause', 'Play');
 }
 
-// Pause if target; unpause if !target.
-function set_animation_pause(target) {
-	if (animation_paused != target) {
-		toggle_animation_pause();
+function animation_unpause() {
+	animation_frame = animation_frame_paused;
+	animation_frame_paused = false;
+
+	change_animation_control_button_label('play_pause', 'Pause');
+}
+
+function toggle_animation_pause() {
+	if (animation_frame_paused) {
+		animation_unpause();
+	} else {
+		animation_pause();
 	}
 }
 
@@ -280,8 +289,14 @@ function animation_action_dispatch(name) {
 }
 
 function onFrame(event) {
-	if (frame_function) {
-		frame_function();
+	if (animating && animation_frame) {
+		if (get_time() < next_frame) {
+			return;
+		} else {
+			next_frame = get_time() + animation_delay;
+		}
+
+		animation_frame();
 	}
 }
 
@@ -639,16 +654,9 @@ var G = new Graph();
 // Don't draw too many points.
 tool.minDistance = 20;
 
-// Number of milliseconds to sleep between animation frames.
-var animation_delay = 500;
-
 // Callbacks, configured elsewhere.
 var dragFunction;
 var releaseFunction;
-
-function get_time() {
-	return new Date().getTime();
-}
 
 // Start an edge action at a vertices, draw a path following the mouse, and
 // call the completion callback end_function when the mouse is released.
@@ -681,15 +689,7 @@ function start_search(search_step) {
 	disable_tools();
 	animation_setup();
 
-	var next_frame = get_time() + animation_delay;
-
-	frame_function = function () {
-		if (get_time() < next_frame) {
-			return;
-		} else {
-			next_frame = get_time() + animation_delay;
-		}
-
+	animation_frame = function () {
 		search_step();
 	}
 
