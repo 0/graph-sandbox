@@ -155,7 +155,10 @@ set_active_tool('add_vertex');
  ***********************/
 
 // Number of milliseconds to sleep between animation frames.
-var animation_delay = 500;
+var animation_delay = 512;
+var animation_delay_factor = 2;
+var animation_delay_min = 1;
+var animation_delay_max = 2048;
 
 var animating = false;
 var next_frame;
@@ -167,7 +170,8 @@ var animation_end;
 // A reference to the animation_frame function for when we're paused.
 var animation_frame_paused;
 
-var animation_control_button_color = new HsbColor(200, 0.6, 0.55);
+var animation_control_button_color_active = new HsbColor(200, 0.6, 0.5);
+var animation_control_button_color_inactive = new HsbColor(200, 0.5, 0.3);
 
 var animation_control_button_size = new Size(60, 50);
 var animation_control_button_text_offset = new Point(animation_control_button_size.width / 2, 19);
@@ -195,7 +199,7 @@ function make_animation_control_button(label, hotkey, posn) {
 	var rectangle = new Rectangle(posn, animation_control_button_size);
 
 	var button = new Path.RoundRectangle(rectangle, button_corners);
-	button.fillColor = animation_control_button_color;
+	button.fillColor = animation_control_button_color_active;
 
 	var label_text = new PointText(rectangle.point + animation_control_button_text_offset);
 	label_text.justification = 'center';
@@ -212,7 +216,7 @@ function make_animation_control_button(label, hotkey, posn) {
 	return new Group([button, label_text, hotkey_text]);
 }
 
-function add_animation_control_button(name, label, hotkey) {
+function add_animation_control_button(name, label, hotkey, alternate_hotkeys) {
 	animation_control_buttons[name] = make_animation_control_button(label, hotkey, animation_control_button_posn);
 	animation_control_buttons_group.addChild(animation_control_buttons[name]);
 
@@ -220,22 +224,39 @@ function add_animation_control_button(name, label, hotkey) {
 		animation_control_hotkey_actions[hotkey] = name;
 	}
 
+	if (alternate_hotkeys) {
+		for (var i = 0; i < alternate_hotkeys.length; i++) {
+			animation_control_hotkey_actions[alternate_hotkeys] = name;
+		}
+	}
+
 	animation_control_button_posn.x += animation_control_button_size.width + 5;
 }
 
-function change_animation_control_button_label(name, label) {
+function add_animation_control_spacer() {
+	animation_control_button_posn.x += 10;
+}
+
+function set_animation_control_button_color(name, color) {
+	animation_control_buttons[name].firstChild.fillColor = color;
+}
+
+function set_animation_control_button_label(name, label) {
 	animation_control_buttons['play_pause'].children[1].content = label;
 }
 
 add_animation_control_button('stop', 'Stop', 'q');
 add_animation_control_button('play_pause', 'Pause', 'space');
+add_animation_control_spacer();
+add_animation_control_button('slower', 'Slower', '-', ['_']);
+add_animation_control_button('faster', 'Faster', '=', ['+']);
 
 function get_time() {
 	return new Date().getTime();
 }
 
 function animation_setup() {
-	next_frame = get_time() + animation_delay;
+	next_frame = get_time();
 
 	animating = true;
 	animation_control_buttons_group.visible = true;
@@ -259,14 +280,14 @@ function animation_pause() {
 	animation_frame_paused = animation_frame;
 	animation_frame = false;
 
-	change_animation_control_button_label('play_pause', 'Play');
+	set_animation_control_button_label('play_pause', 'Play');
 }
 
 function animation_unpause() {
 	animation_frame = animation_frame_paused;
 	animation_frame_paused = false;
 
-	change_animation_control_button_label('play_pause', 'Pause');
+	set_animation_control_button_label('play_pause', 'Pause');
 }
 
 function toggle_animation_pause() {
@@ -285,18 +306,42 @@ function animation_action_dispatch(name) {
 		case 'play_pause':
 			toggle_animation_pause();
 			return;
+		case 'slower':
+			animation_delay *= animation_delay_factor;
+
+			set_animation_control_button_color('faster', animation_control_button_color_active);
+
+			if (animation_delay >= animation_delay_max) {
+				animation_delay = animation_delay_max;
+
+				set_animation_control_button_color('slower', animation_control_button_color_inactive);
+			}
+
+			return;
+		case 'faster':
+			animation_delay /= animation_delay_factor;
+
+			set_animation_control_button_color('slower', animation_control_button_color_active);
+
+			if (animation_delay <= animation_delay_min) {
+				animation_delay = animation_delay_min;
+
+				set_animation_control_button_color('faster', animation_control_button_color_inactive);
+			}
+
+			return;
 	}
 }
 
 function onFrame(event) {
 	if (animating && animation_frame) {
-		if (get_time() < next_frame) {
+		if (get_time() < next_frame + animation_delay) {
 			return;
-		} else {
-			next_frame = get_time() + animation_delay;
 		}
 
 		animation_frame();
+
+		next_frame = get_time();
 	}
 }
 
