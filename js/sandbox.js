@@ -166,7 +166,6 @@ function Vertex(point, label) {
 	circle.fillColor = new HsbColor(Math.random() * 360, 0.7, 0.5);
 
 	var label_text = new PointText(circle.position);
-	label_text.content = label;
 	label_text.characterStyle.fillColor = 'white';
 	// Attempt to center the label in the vertex.
 	label_text.position.y += 4;
@@ -175,6 +174,7 @@ function Vertex(point, label) {
 	var group = new Group([circle, label_text]);
 	group.position = point;
 
+	this.degree = 0;
 	this.image = group;
 
 	this.set_default_appearance();
@@ -304,6 +304,9 @@ function Graph() {
 	// The values of each element are the Edge objects for the edges. Note that
 	// each is stored twice (once in the list of each vertex incident to the edge).
 	this.edges = [];
+
+	// 0: none, 1: index, 2: degree
+	this.vertex_label_mode = 1;
 }
 
 Graph.prototype.add_vertex = function (point) {
@@ -312,6 +315,8 @@ Graph.prototype.add_vertex = function (point) {
 
 	this.vertices.push(v);
 	this.edges.push({});
+
+	this.set_vertex_label(n);
 
 	return n;
 };
@@ -331,6 +336,11 @@ Graph.prototype.move_vertex = function (v, point) {
 };
 
 Graph.prototype.remove_vertex = function (v) {
+	// Remove all the edges connected to this vertex.
+	for (var i in this.edges[v]) {
+		this.remove_edge(v, i);
+	}
+
 	// Get rid of the vertex by shuffling all the vertices that have greater
 	// indices.
 	this.vertices[v].destroy();
@@ -338,14 +348,7 @@ Graph.prototype.remove_vertex = function (v) {
 
 	// Update all the labels on the later vertices.
 	for (var i = v; i < this.vertices.length; i++) {
-		this.vertices[i].set_label(i);
-	}
-
-	// Remove all the edges connected to this vertex.
-	for (var i in this.edges[v]) {
-		this.edges[v][i].destroy();
-
-		delete this.edges[i][v];
+		this.set_vertex_label(i);
 	}
 
 	this.edges.splice(v, 1);
@@ -377,6 +380,24 @@ Graph.prototype.remove_vertex = function (v) {
 	return this;
 };
 
+Graph.prototype.set_vertex_label = function (v) {
+	var vertex = this.get_vertex(v);
+
+	switch (this.vertex_label_mode) {
+		case 0:
+			vertex.set_label('');
+			break;
+		case 1:
+			vertex.set_label(v);
+			break;
+		case 2:
+			vertex.set_label(vertex.degree);
+			break;
+	}
+
+	return this;
+};
+
 Graph.prototype.add_edge = function (v1, v2) {
 	// Not if it already exists or if it connects a vertex with itself.
 	if (v2 in this.edges[v1] || v1 == v2) {
@@ -387,6 +408,12 @@ Graph.prototype.add_edge = function (v1, v2) {
 
 	this.edges[v1][v2] = e;
 	this.edges[v2][v1] = e;
+
+	this.get_vertex(v1).degree++;
+	this.get_vertex(v2).degree++;
+
+	this.set_vertex_label(v1);
+	this.set_vertex_label(v2);
 
 	return this;
 };
@@ -405,6 +432,12 @@ Graph.prototype.remove_edge = function (v1, v2) {
 
 	delete this.edges[v1][v2];
 	delete this.edges[v2][v1];
+
+	this.get_vertex(v1).degree--;
+	this.get_vertex(v2).degree--
+
+	this.set_vertex_label(v1);
+	this.set_vertex_label(v2);
 
 	return this;
 };
@@ -446,6 +479,16 @@ Graph.prototype.unhighlight_all = function () {
 		for (var j in this.edges[i]) {
 			this.edges[i][j].unhighlight();
 		}
+	}
+
+	return this;
+};
+
+Graph.prototype.toggle_vertex_label_mode = function () {
+	this.vertex_label_mode = (this.vertex_label_mode + 1) % 3;
+
+	for (var i = 0; i < this.vertices.length; i++) {
+		this.set_vertex_label(i);
 	}
 
 	return this;
@@ -527,6 +570,12 @@ function onKeyDown(event) {
 
 			return;
 		}
+	}
+
+	switch (event.key) {
+		case 'l':
+			G.toggle_vertex_label_mode();
+			return;
 	}
 }
 
