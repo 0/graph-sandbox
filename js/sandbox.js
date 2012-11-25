@@ -363,7 +363,7 @@ function Vertex(point, label) {
 	vertex_layer.activate();
 
 	var circle = new Path.Circle(0, circle_radius);
-	circle.fillColor = new HsbColor(Math.random() * 360, 0.7, 0.5);
+	circle.fillColor = new HsbColor(Math.random() * 360, 0.5 + Math.random() * 0.3, 0.3 + Math.random() * 0.5);
 
 	var label_text = new PointText(circle.position);
 	label_text.characterStyle.fillColor = 'white';
