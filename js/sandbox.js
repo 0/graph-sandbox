@@ -96,6 +96,10 @@ add_toolbox_button('insert_binary_tree', 'Insert binary tree', 't', 'Click.');
 add_toolbox_button('insert_complete_graph', 'Insert complete graph', null, 'Click.');
 add_toolbox_button('insert_random_graph', 'Insert random graph', null, 'Click.');
 
+var label_instructions = new PointText(toolbox_button_posn + new Point(5, 20));
+label_instructions.fillColor = 'white';
+label_instructions.content = '[L]: none, ID, degree';
+
 tool_cleanup['show_neighbours'] = function () {
 	G.unhighlight_all();
 };
@@ -504,7 +508,7 @@ function Graph() {
 	this.edges = [];
 
 	// 0: none, 1: index, 2: degree
-	this.vertex_label_mode = 1;
+	this.vertex_label_mode = 0;
 }
 
 Graph.prototype.add_vertex = function (point) {
