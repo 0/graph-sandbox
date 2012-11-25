@@ -86,8 +86,7 @@ add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click. Shift-click to
 add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
 add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
 add_toolbox_spacer();
-add_toolbox_button('show_adjacent', 'Adjacent vertices', null, 'Hover.');
-add_toolbox_button('show_incident', 'Incident edges', null, 'Hover.');
+add_toolbox_button('show_neighbours', 'Neighbours', 'n', 'Hover.');
 add_toolbox_spacer();
 add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex.');
 add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex.');
@@ -96,11 +95,7 @@ add_toolbox_button('insert_binary_tree', 'Insert binary tree', 't', 'Click.');
 add_toolbox_button('insert_complete_graph', 'Insert complete graph', null, 'Click.');
 add_toolbox_button('insert_random_graph', 'Insert random graph', null, 'Click.');
 
-tool_cleanup['show_adjacent'] = function () {
-	G.unhighlight_all();
-};
-
-tool_cleanup['show_incident'] = function () {
+tool_cleanup['show_neighbours'] = function () {
 	G.unhighlight_all();
 };
 
@@ -847,39 +842,23 @@ function onMouseMove(event) {
 	}
 
 	switch (current_tool) {
-		case 'show_adjacent':
+		case 'show_neighbours':
 			var vertex = G.vertex_at_position(event.point);
 
-			if (vertex === false) {
-				break;
-			}
+			tool_cleanup['show_neighbours']();
 
-			tool_cleanup['show_adjacent']();
+			if (vertex === false) {
+				return;
+			}
 
 			var neighbours = G.neighbours(vertex);
 
 			for (var i = 0; i < neighbours.length; i++) {
 				G.get_vertex(neighbours[i]).highlight();
-			}
-
-			break;
-
-		case 'show_incident':
-			var vertex = G.vertex_at_position(event.point);
-
-			if (vertex === false) {
-				break;
-			}
-
-			tool_cleanup['show_incident']();
-
-			var neighbours = G.neighbours(vertex);
-
-			for (var i = 0; i < neighbours.length; i++) {
 				G.get_edge(vertex, neighbours[i]).highlight();
 			}
 
-			break;
+			return;
 	}
 }
 
