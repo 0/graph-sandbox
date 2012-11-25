@@ -86,6 +86,7 @@ add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click. Shift-click to
 add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
 add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
 add_toolbox_spacer();
+add_toolbox_button('pan_view', 'Pan', 'p', 'Drag.');
 add_toolbox_button('show_neighbours', 'Neighbours', 'n', 'Hover.');
 add_toolbox_spacer();
 add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex.');
@@ -347,12 +348,16 @@ function onFrame(event) {
 // The size of the visual representation of a vertex.
 var circle_radius = 20;
 
-// Make a separate layer for the edges.
+// Make separate layers for the vertices and edges and put them in a group.
+var vertex_layer = new Layer();
 var edge_layer = new Layer();
-edge_layer.moveBelow(default_layer);
 default_layer.activate();
 
+var graph_group = new Group([edge_layer, vertex_layer]);
+
 function Vertex(point, label) {
+	vertex_layer.activate();
+
 	var circle = new Path.Circle(0, circle_radius);
 	circle.fillColor = new HsbColor(Math.random() * 360, 0.7, 0.5);
 
@@ -364,6 +369,8 @@ function Vertex(point, label) {
 
 	var group = new Group([circle, label_text]);
 	group.position = point;
+
+	default_layer.activate();
 
 	this.degree = 0;
 	this.image = group;
@@ -921,6 +928,19 @@ function onMouseDown(event) {
 
 				if (vertex !== false) {
 					start_edge_action(vertex, '#ff0000', bind(G, 'remove_edge'));
+				}
+				return;
+
+			case 'pan_view':
+				var root_point = graph_group.position - event.point;
+
+				dragFunction = function (point) {
+					graph_group.position = root_point + point;
+				}
+
+				releaseFunction = function (point) {
+					dragFunction = false;
+					releaseFunction = false;
 				}
 				return;
 
