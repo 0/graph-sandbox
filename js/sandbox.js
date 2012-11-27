@@ -359,7 +359,7 @@ default_layer.activate();
 
 var graph_group = new Group([edge_layer, vertex_layer]);
 
-function Vertex(point, label) {
+function Vertex(point) {
 	vertex_layer.activate();
 
 	var circle = new Path.Circle(0, circle_radius);
@@ -513,7 +513,7 @@ function Graph() {
 
 Graph.prototype.add_vertex = function (point) {
 	var n = this.vertices.length;
-	var v = new Vertex(point, n);
+	var v = new Vertex(point);
 
 	this.vertices.push(v);
 	this.edges.push({});
