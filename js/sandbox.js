@@ -1,14 +1,3 @@
-/**********
- *  Misc  *
- **********/
-
-// Assume that Function.bind doesn't exist.
-function bind(context, name) {
-	return function () {
-		return context[name].apply(context, arguments);
-	};
-}
-
 /*************
  *  Toolbox  *
  *************/
@@ -359,8 +348,8 @@ default_layer.activate();
 
 var graph_group = new Group([edge_layer, vertex_layer]);
 
-function Vertex(point) {
-	vertex_layer.activate();
+function VisualVertex(point) {
+	Vertex.call(this);
 
 	var circle = new Path.Circle(0, circle_radius);
 	circle.fillColor = new HsbColor(Math.random() * 360, 0.5 + Math.random() * 0.3, 0.3 + Math.random() * 0.5);
@@ -371,332 +360,219 @@ function Vertex(point) {
 	label_text.position.y += 4;
 	label_text.justification = 'center';
 
-	var group = new Group([circle, label_text]);
-	group.position = point;
-
+	vertex_layer.activate();
+	this.image = new Group([circle, label_text]);
 	default_layer.activate();
 
-	this.degree = 0;
-	this.image = group;
-
-	this.set_default_appearance();
-};
-
-Vertex.prototype.get_circle = function () {
-	return this.image.children[0];
-};
-
-Vertex.prototype.get_label = function () {
-	return this.image.children[1];
-};
-
-Vertex.prototype.get_position = function () {
-	return this.image.position;
-};
-
-Vertex.prototype.set_position = function (point) {
 	this.image.position = point;
-
-	return this;
-};
-
-Vertex.prototype.set_default_appearance = function () {
-	this.get_circle().strokeColor = 'black';
-	this.get_circle().strokeWidth = 0;
-
-	return this;
-};
-
-Vertex.prototype.set_label = function (text) {
-	this.get_label().content = text;
-
-	return this;
-};
-
-Vertex.prototype.highlight = function () {
-	this.get_circle().strokeColor = new HsbColor(0, 0.85, 0.85);
-	this.get_circle().strokeColor.hue = this.get_circle().fillColor.hue + 180;
-
-	this.get_circle().strokeWidth = 5;
-
-	return this;
-};
-
-Vertex.prototype.unhighlight = function () {
 	this.set_default_appearance();
-
-	return this;
 };
 
-Vertex.prototype.destroy = function () {
-	this.image.remove();
+extend_class(Vertex, VisualVertex, {
+	get_circle: function () {
+		return this.image.children[0];
+	},
+	get_label: function () {
+		return this.image.children[1];
+	},
+	get_position: function () {
+		return this.image.position;
+	},
+	set_position: function (point) {
+		this.image.position = point;
 
-	return this;
-};
+		return this;
+	},
+	set_default_appearance: function () {
+		this.get_circle().strokeColor = 'black';
+		this.get_circle().strokeWidth = 0;
 
-function Edge(v1, v2, point1, point2) {
+		return this;
+	},
+	set_label: function (text) {
+		this.get_label().content = text;
+
+		return this;
+	},
+	highlight: function () {
+		this.get_circle().strokeColor = new HsbColor(0, 0.85, 0.85);
+		this.get_circle().strokeColor.hue = this.get_circle().fillColor.hue + 180;
+
+		this.get_circle().strokeWidth = 5;
+
+		return this;
+	},
+	unhighlight: function () {
+		this.set_default_appearance();
+
+		return this;
+	},
+	destroy: function () {
+		this.image.remove();
+
+		return this;
+	}
+});
+
+
+function VisualEdge(v1, v2) {
+	Edge.call(this, v1, v2);
+
 	edge_layer.activate();
-
-	var path = new Path();
-	path.add(point1);
-	path.add(point2);
-
+	this.image = new Path();
 	default_layer.activate();
 
-	this.v1 = v1;
-	this.v2 = v2;
-	this.image = path;
+	this.image.add(new Point());
+	this.image.add(new Point());
 
 	this.set_default_appearance();
 }
 
-Edge.prototype.set_default_appearance = function () {
-	this.image.strokeColor = 'grey';
-	this.image.strokeWidth = 2;
+extend_class(Edge, VisualEdge, {
+	set_default_appearance: function () {
+		this.image.strokeColor = 'grey';
+		this.image.strokeWidth = 2;
 
-	return this;
-};
+		return this;
+	},
+	move_end: function (v, point) {
+		var im = this.image;
 
-Edge.prototype.move_end = function (v, point) {
-	var im = this.image;
+		if (this.v1 == v) {
+			im.removeSegment(0);
+			im.insert(0, point);
+		} else if (this.v2 == v) {
+			last_segment = im.segments.length - 1;
 
-	if (this.v1 == v) {
-		im.removeSegment(0);
-		im.insert(0, point);
-	} else if (this.v2 == v) {
-		last_segment = im.segments.length - 1;
+			im.removeSegment(last_segment);
+			im.insert(last_segment, point);
+		}
 
-		im.removeSegment(last_segment);
-		im.insert(last_segment, point);
+		return this;
+	},
+	highlight: function () {
+		this.image.strokeColor = 'white';
+		this.image.strokeWidth = 3;
+
+		return this;
+	},
+	unhighlight: function () {
+		this.set_default_appearance();
+
+		return this;
+	},
+	destroy: function () {
+		this.image.remove();
+
+		return this;
 	}
+});
 
-	return this;
-};
 
-Edge.prototype.highlight = function () {
-	this.image.strokeColor = 'white';
-	this.image.strokeWidth = 3;
-
-	return this;
-};
-
-Edge.prototype.unhighlight = function () {
-	this.set_default_appearance();
-
-	return this;
-};
-
-Edge.prototype.destroy = function () {
-	this.image.remove();
-
-	return this;
-};
-
-function Graph() {
-	// Array of Group objects corresponding to the vertices.
-	this.vertices = [];
-
-	// Array of objects of Edge objects, implementing an adjacency list.
-	//
-	// Each element corresponds to the element of the vertices array with the same
-	// index. The keys of each element are also indices into the vertices array,
-	// where the presence of a key signifies the existence of an edge between the
-	// two vertices.
-	//
-	// The values of each element are the Edge objects for the edges. Note that
-	// each is stored twice (once in the list of each vertex incident to the edge).
-	this.edges = [];
+function VisualGraph(vertex_class, edge_class) {
+	Graph.call(this, vertex_class, edge_class);
 
 	// 0: none, 1: index, 2: degree
 	this.vertex_label_mode = 0;
 }
 
-Graph.prototype.add_vertex = function (point) {
-	var n = this.vertices.length;
-	var v = new Vertex(point);
+extend_class(Graph, VisualGraph, {
+	add_vertex: function (point) {
+		var n = Graph.prototype.add_vertex.call(this);
 
-	this.vertices.push(v);
-	this.edges.push({});
+		this.get_vertex(n).set_position(point);
+		this.set_vertex_label(n);
 
-	this.set_vertex_label(n);
+		return n;
+	},
+	move_vertex: function (v, point) {
+		this.vertices[v].set_position(point);
 
-	return n;
-};
+		for (var i in this.edges[v]) {
+			this.edges[v][i].move_end(v, point);
+		}
 
-Graph.prototype.get_vertex = function (v) {
-	return this.vertices[v];
-};
+		return this;
+	},
+	set_vertex_label: function (v) {
+		var vertex = this.get_vertex(v);
 
-Graph.prototype.move_vertex = function (v, point) {
-	this.vertices[v].set_position(point);
+		switch (this.vertex_label_mode) {
+			case 0:
+				vertex.set_label('');
+				break;
+			case 1:
+				vertex.set_label(v);
+				break;
+			case 2:
+				vertex.set_label(vertex.degree);
+				break;
+		}
 
-	for (var i in this.edges[v]) {
-		this.edges[v][i].move_end(v, point);
-	}
+		return this;
+	},
+	add_edge: function (v1, v2) {
+		var edge = Graph.prototype.add_edge.call(this, v1, v2);
 
-	return this;
-};
+		if (!edge) {
+			return false;
+		}
 
-Graph.prototype.remove_vertex = function (v) {
-	// Remove all the edges connected to this vertex.
-	for (var i in this.edges[v]) {
-		this.remove_edge(v, i);
-	}
+		edge.move_end(v1, this.get_vertex(v1).get_position());
+		edge.move_end(v2, this.get_vertex(v2).get_position());
 
-	// Get rid of the vertex by shuffling all the vertices that have greater
-	// indices.
-	this.vertices[v].destroy();
-	this.vertices.splice(v, 1);
+		this.set_vertex_label(v1);
+		this.set_vertex_label(v2);
 
-	// Update all the labels on the later vertices.
-	for (var i = v; i < this.vertices.length; i++) {
-		this.set_vertex_label(i);
-	}
+		return edge;
+	},
+	remove_edge: function (v1, v2) {
+		var edge = Graph.prototype.remove_edge.call(this, v1, v2);
 
-	this.edges.splice(v, 1);
+		if (!edge) {
+			return false;
+		}
 
-	// Adjust all the later vertex indices.
-	for (var i = 0; i < this.edges.length; i++) {
-		var new_edge = {};
+		edge.destroy();
 
-		for (var j in this.edges[i]) {
-			var edge = this.edges[i][j];
+		this.set_vertex_label(v1);
+		this.set_vertex_label(v2);
 
-			new_edge[j > v ? j - 1 : j] = edge;
-
-			// Only update each Edge object once.
-			if (i < j) {
-				if (edge.v1 > v) {
-					edge.v1--;
-				}
-
-				if (edge.v2 > v) {
-					edge.v2--;
-				}
+		return edge;
+	},
+	// Get the vertex sitting at the given position, if there is one.
+	vertex_at_position: function (point) {
+		for (var i = this.vertices.length - 1; i >= 0; i--) {
+			if (this.vertices[i].image.hitTest(point)) {
+				return i;
 			}
 		}
 
-		this.edges[i] = new_edge;
-	}
+		return false;
+	},
+	unhighlight_all: function () {
+		for (var i = 0; i < this.vertices.length; i++) {
+			this.vertices[i].unhighlight();
 
-	return this;
-};
-
-Graph.prototype.set_vertex_label = function (v) {
-	var vertex = this.get_vertex(v);
-
-	switch (this.vertex_label_mode) {
-		case 0:
-			vertex.set_label('');
-			break;
-		case 1:
-			vertex.set_label(v);
-			break;
-		case 2:
-			vertex.set_label(vertex.degree);
-			break;
-	}
-
-	return this;
-};
-
-Graph.prototype.add_edge = function (v1, v2) {
-	// Not if it already exists or if it connects a vertex with itself.
-	if (v2 in this.edges[v1] || v1 == v2) {
-		return;
-	}
-
-	var e = new Edge(v1, v2, this.vertices[v1].get_position(), this.vertices[v2].get_position());
-
-	this.edges[v1][v2] = e;
-	this.edges[v2][v1] = e;
-
-	this.get_vertex(v1).degree++;
-	this.get_vertex(v2).degree++;
-
-	this.set_vertex_label(v1);
-	this.set_vertex_label(v2);
-
-	return this;
-};
-
-Graph.prototype.get_edge = function (v1, v2) {
-	return this.edges[v1][v2];
-};
-
-Graph.prototype.remove_edge = function (v1, v2) {
-	// Not if it doesn't exist.
-	if (!(v2 in this.edges[v1])) {
-		return;
-	}
-
-	this.edges[v1][v2].destroy();
-
-	delete this.edges[v1][v2];
-	delete this.edges[v2][v1];
-
-	this.get_vertex(v1).degree--;
-	this.get_vertex(v2).degree--
-
-	this.set_vertex_label(v1);
-	this.set_vertex_label(v2);
-
-	return this;
-};
-
-Graph.prototype.neighbours = function (v) {
-	var result = [];
-
-	for (var i in this.edges[v]) {
-		result.push(i);
-	}
-
-	return result;
-};
-
-// Remove all vertices and edges.
-Graph.prototype.clear = function () {
-	while (this.vertices.length > 0) {
-		this.remove_vertex(0);
-	}
-
-	return this;
-}
-
-// Get the vertex sitting at the given position, if there is one.
-Graph.prototype.vertex_at_position = function (point) {
-	for (var i = this.vertices.length - 1; i >= 0; i--) {
-		if (this.vertices[i].image.hitTest(point)) {
-			return i;
+			for (var j in this.edges[i]) {
+				this.edges[i][j].unhighlight();
+			}
 		}
-	}
 
-	return false;
-};
+		return this;
+	},
+	toggle_vertex_label_mode: function () {
+		this.vertex_label_mode = (this.vertex_label_mode + 1) % 3;
 
-Graph.prototype.unhighlight_all = function () {
-	for (var i = 0; i < this.vertices.length; i++) {
-		this.vertices[i].unhighlight();
-
-		for (var j in this.edges[i]) {
-			this.edges[i][j].unhighlight();
+		for (var i = 0; i < this.vertices.length; i++) {
+			this.set_vertex_label(i);
 		}
+
+		return this;
 	}
+});
 
-	return this;
-};
-
-Graph.prototype.toggle_vertex_label_mode = function () {
-	this.vertex_label_mode = (this.vertex_label_mode + 1) % 3;
-
-	for (var i = 0; i < this.vertices.length; i++) {
-		this.set_vertex_label(i);
-	}
-
-	return this;
-};
-
-var G = new Graph();
+var G = new VisualGraph(VisualVertex, VisualEdge);
 
 /*****************
  *  Interaction  *
