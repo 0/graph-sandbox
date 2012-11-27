@@ -582,8 +582,8 @@ var G = new VisualGraph(VisualVertex, VisualEdge);
 tool.minDistance = 20;
 
 // Callbacks, configured elsewhere.
-var dragFunction;
-var releaseFunction;
+var drag_function;
+var release_function;
 
 // Start an edge action at a vertices, draw a path following the mouse, and
 // call the completion callback end_function when the mouse is released.
@@ -592,12 +592,12 @@ function start_edge_action(start_vertex, color, end_function) {
 	path.strokeColor = color;
 	path.add(G.get_vertex(start_vertex).get_position());
 
-	dragFunction = function (point) {
+	drag_function = function (point) {
 		path.add(point);
 		path.smooth();
 	}
 
-	releaseFunction = function (point) {
+	release_function = function (point) {
 		path.remove();
 
 		var end_vertex = G.vertex_at_position(point);
@@ -606,8 +606,8 @@ function start_edge_action(start_vertex, color, end_function) {
 			end_function(start_vertex, end_vertex);
 		}
 
-		dragFunction = false;
-		releaseFunction = false;
+		drag_function = false;
+		release_function = false;
 	}
 }
 
@@ -773,13 +773,13 @@ function onMouseDown(event) {
 					return;
 				}
 
-				dragFunction = function (point) {
+				drag_function = function (point) {
 					G.move_vertex(vertex, point);
 				}
 
-				releaseFunction = function (point) {
-					dragFunction = false;
-					releaseFunction = false;
+				release_function = function (point) {
+					drag_function = false;
+					release_function = false;
 				}
 				return;
 
@@ -814,13 +814,13 @@ function onMouseDown(event) {
 			case 'pan_view':
 				var root_point = graph_group.position - event.point;
 
-				dragFunction = function (point) {
+				drag_function = function (point) {
 					graph_group.position = root_point + point;
 				}
 
-				releaseFunction = function (point) {
-					dragFunction = false;
-					releaseFunction = false;
+				release_function = function (point) {
+					drag_function = false;
+					release_function = false;
 				}
 				return;
 
@@ -945,13 +945,13 @@ function onMouseDown(event) {
 }
 
 function onMouseDrag(event) {
-	if (dragFunction) {
-		dragFunction(event.point);
+	if (drag_function) {
+		drag_function(event.point);
 	}
 }
 
 function onMouseUp(event) {
-	if (releaseFunction) {
-		releaseFunction(event.point);
+	if (release_function) {
+		release_function(event.point);
 	}
 }
