@@ -414,8 +414,8 @@ Vertex.prototype.set_label = function (text) {
 };
 
 Vertex.prototype.highlight = function () {
-	this.get_circle().strokeColor = new HsbColor(this.get_circle().fillColor);
-	this.get_circle().strokeColor.hue += 180;
+	this.get_circle().strokeColor = new HsbColor(0, 0.85, 0.85);
+	this.get_circle().strokeColor.hue = this.get_circle().fillColor.hue + 180;
 
 	this.get_circle().strokeWidth = 5;
 
