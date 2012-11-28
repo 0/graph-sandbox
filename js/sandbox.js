@@ -480,7 +480,10 @@ extend_class(Graph, VisualGraph, {
 	add_vertex: function (point) {
 		var n = Graph.prototype.add_vertex.call(this);
 
-		this.get_vertex(n).set_position(point);
+		if (point !== undefined) {
+			this.get_vertex(n).set_position(point);
+		}
+
 		this.set_vertex_label(n);
 
 		return n;
@@ -569,6 +572,72 @@ extend_class(Graph, VisualGraph, {
 		}
 
 		return this;
+	},
+	insert_binary_tree: function (depth, root_position) {
+		var vertices = Graph.prototype.insert_binary_tree.call(this, depth);
+
+		if (vertices.length > 0 && root_position !== undefined) {
+			var step = 60;
+			var k = 0;
+
+			for (var i = 0; i < depth; i++) {
+				var depth_step = step * Math.pow(2, depth - i - 1);
+				var left_pos = -1 * depth_step * (Math.pow(2, i - 1) - 1 / 2);
+
+				for (var j = 0; j < Math.pow(2, i); j++) {
+					var pos = root_position + new Point(left_pos, 50 * i)
+					this.move_vertex(vertices[k], pos);
+
+					left_pos += depth_step;
+					k++;
+				}
+			}
+		}
+
+		return vertices;
+	},
+	// Arrange the given vertices in the shape of a regular polygon.
+	arrange_polygonally: function (vertices, center_position) {
+		var angle_step, radius;
+
+		if (vertices.length == 1) {
+			angle_step = 0;
+			radius = 0;
+		} else {
+			angle_step = 2 * Math.PI / vertices.length;
+			radius = 1.5 * circle_radius / Math.sin(angle_step / 2);
+		}
+
+		var angle = 0;
+
+		for (var i = 0; i < vertices.length; i++) {
+			var x = radius * Math.sin(angle);
+			var y = -1 * radius * Math.cos(angle);
+
+			this.move_vertex(vertices[i], center_position + new Point(x, y));
+
+			angle += angle_step;
+		}
+
+		return this;
+	},
+	insert_complete_graph: function (n, center_position) {
+		var vertices = Graph.prototype.insert_complete_graph.call(this, n);
+
+		if (center_position !== undefined) {
+			this.arrange_polygonally(vertices, center_position);
+		}
+
+		return vertices;
+	},
+	insert_random_graph: function (max_n, center_position) {
+		var vertices = Graph.prototype.insert_random_graph.call(this, max_n);
+
+		if (center_position !== undefined) {
+			this.arrange_polygonally(vertices, center_position);
+		}
+
+		return vertices;
 	}
 });
 
@@ -649,78 +718,6 @@ function onKeyDown(event) {
 			G.toggle_vertex_label_mode();
 			return;
 	}
-}
-
-function insert_binary_tree(depth, root_position) {
-	var step = 60;
-	var parents = [];
-	var next_parents = [];
-
-	for (var i = 0; i < depth; i++) {
-		var depth_step = step * Math.pow(2, depth - i - 1);
-		var left_pos = -1 * depth_step * (Math.pow(2, i - 1) - 1 / 2);
-
-		for (var j = 0; j < Math.pow(2, i); j++) {
-			var cur = G.add_vertex(root_position + new Point(left_pos, 50 * i));
-			next_parents.push(cur);
-
-			// The root doesn't have any parents.
-			if (parents.length > 0) {
-				G.add_edge(cur, parents[Math.floor(j / 2)]);
-			}
-
-			left_pos += depth_step;
-		}
-
-		parents = next_parents;
-		next_parents = [];
-	}
-}
-
-function insert_complete_graph(n, center_position, vertex_prob, edge_prob) {
-	if (n <= 0) {
-		return;
-	}
-
-	var angle_step, radius;
-
-	if (n == 1) {
-		angle_step = 0;
-		radius = 0;
-	} else {
-		angle_step = 2 * Math.PI / n;
-		radius = 1.5 * circle_radius / Math.sin(angle_step / 2);
-	}
-
-	var angle = -1 * angle_step;
-	var vertices = [];
-
-	for (var i = 0; i < n; i++) {
-		angle += angle_step;
-
-		if (vertex_prob !== undefined && Math.random() > vertex_prob) {
-			continue;
-		}
-
-		var x = radius * Math.sin(angle);
-		var y = -1 * radius * Math.cos(angle);
-
-		vertices.push(G.add_vertex(center_position + new Point(x, y)));
-	}
-
-	for (var i = 0; i < vertices.length; i++) {
-		for (var j = i + 1; j < vertices.length; j++) {
-			if (edge_prob !== undefined && Math.random() > edge_prob) {
-				continue;
-			}
-
-			G.add_edge(vertices[i], vertices[j]);
-		}
-	}
-}
-
-function insert_random_graph(max_n, center_position) {
-	insert_complete_graph(max_n, center_position, 0.5, 0.5);
 }
 
 function onMouseMove(event) {
@@ -831,41 +828,16 @@ function onMouseDown(event) {
 					return;
 				}
 
-				var visited_vertices = {};
-				var vertex_stack = [vertex];
+				var dfs_step = G.dfs(vertex, function (c, n) {
+					// Highlight the next neighbour.
+					G.get_vertex(n).highlight();
+					G.get_edge(n, c).highlight();
+				}, function (c, p) {
+					// Unhighlight the edge along which we're backtracking.
+					G.get_edge(c, p).unhighlight();
+				}, animation_teardown);
 
 				G.get_vertex(vertex).highlight();
-
-				function dfs_step() {
-					// Visit the top-most vertex on the stack.
-					var current_vertex = vertex_stack[vertex_stack.length - 1];
-					visited_vertices[current_vertex] = true;
-
-					// Visit the next neighbour.
-					var neighbours = G.neighbours(current_vertex);
-
-					for (var i = 0; i < neighbours.length; i++) {
-						if (!(neighbours[i] in visited_vertices)) {
-							G.get_vertex(neighbours[i]).highlight();
-							G.get_edge(neighbours[i], current_vertex).highlight();
-
-							vertex_stack.push(neighbours[i]);
-
-							return;
-						}
-					}
-
-					// All neighbours have been visited, so backtrack.
-					vertex_stack.pop();
-
-					if (vertex_stack.length > 0) {
-						// Unhighlight the edge along which we're backtracking.
-						G.get_edge(current_vertex, vertex_stack[vertex_stack.length - 1]).unhighlight();
-					} else {
-						// We're done with the search.
-						animation_teardown();
-					}
-				}
 
 				start_search(dfs_step);
 				return;
@@ -877,58 +849,34 @@ function onMouseDown(event) {
 					return;
 				}
 
-				var visited_vertices = {};
-				visited_vertices[vertex] = true;
 				var highlighted_edges = [];
-				var vertex_queue = [vertex];
 
-				function bfs_step() {
-					// Are we done with the search?
-					if (vertex_queue.length == 0) {
-						animation_teardown();
-
-						return;
-					}
-
-					// Visit the first vertex in the queue.
-					var current_vertex = vertex_queue.splice(0, 1)[0];
-					G.get_vertex(current_vertex).highlight();
+				var bfs_step = G.bfs(vertex, function (c, n) {
+					G.get_edge(c, n).highlight();
+					highlighted_edges.push([c, n]);
+				}, function (c) {
+					G.get_vertex(c).highlight();
 
 					// Unhighlight the edge that caused it to be visited.
 					if (highlighted_edges.length > 0) {
 						var edge = highlighted_edges.splice(0, 1)[0];
 						G.get_edge(edge[0], edge[1]).unhighlight();
 					}
-
-					// Queue all the neighbours.
-					var neighbours = G.neighbours(current_vertex);
-
-					for (var i = 0; i < neighbours.length; i++) {
-						if (!(neighbours[i] in visited_vertices)) {
-							G.get_edge(neighbours[i], current_vertex).highlight();
-							highlighted_edges.push([neighbours[i], current_vertex]);
-
-							vertex_queue.push(neighbours[i]);
-
-							// Make sure that it doesn't get queued again.
-							visited_vertices[neighbours[i]] = true;
-						}
-					}
-				}
+				}, animation_teardown);
 
 				start_search(bfs_step);
 				return;
 
 			case 'insert_binary_tree':
-				insert_binary_tree(4, event.point);
+				G.insert_binary_tree(4, event.point);
 				return;
 
 			case 'insert_complete_graph':
-				insert_complete_graph(7, event.point);
+				G.insert_complete_graph(7, event.point);
 				return;
 
 			case 'insert_random_graph':
-				insert_random_graph(12, event.point);
+				G.insert_random_graph(8, event.point);
 				return;
 		}
 	}

@@ -146,5 +146,130 @@ Graph.prototype = {
 		}
 
 		return this;
+	},
+	dfs: function (start_vertex, neighbour_f, backtrack_f, end_f) {
+		var that = this;
+
+		var visited_vertices = {};
+		var vertex_stack = [start_vertex];
+
+		// Go through a single step of DFS.
+		return function () {
+			// Visit the top-most vertex on the stack.
+			var current_vertex = vertex_stack[vertex_stack.length - 1];
+			visited_vertices[current_vertex] = true;
+
+			// Go to the next neighbour.
+			var neighbours = that.neighbours(current_vertex);
+
+			for (var i = 0; i < neighbours.length; i++) {
+				if (!(neighbours[i] in visited_vertices)) {
+					neighbour_f(current_vertex, neighbours[i]);
+
+					vertex_stack.push(neighbours[i]);
+
+					return;
+				}
+			}
+
+			// All neighbours have been visited, so backtrack.
+			vertex_stack.pop();
+
+			if (vertex_stack.length > 0) {
+				backtrack_f(current_vertex, vertex_stack[vertex_stack.length - 1]);
+			} else {
+				// We're done with the search.
+				end_f();
+			}
+		};
+	},
+	bfs: function (start_vertex, neighbour_f, visit_f, end_f) {
+		var that = this;
+
+		var visited_vertices = {};
+		visited_vertices[start_vertex] = true;
+		var vertex_queue = [start_vertex];
+
+		// Go through a single step of BFS.
+		return function () {
+			// Are we done with the search?
+			if (vertex_queue.length == 0) {
+				end_f();
+
+				return;
+			}
+
+			// Visit the first vertex in the queue.
+			var current_vertex = vertex_queue.splice(0, 1)[0];
+			visit_f(current_vertex);
+
+			// Queue all the neighbours.
+			var neighbours = that.neighbours(current_vertex);
+
+			for (var i = 0; i < neighbours.length; i++) {
+				if (!(neighbours[i] in visited_vertices)) {
+					neighbour_f(current_vertex, neighbours[i]);
+
+					vertex_queue.push(neighbours[i]);
+
+					// Make sure that it doesn't get queued again.
+					visited_vertices[neighbours[i]] = true;
+				}
+			}
+		};
+	},
+	insert_binary_tree: function (depth) {
+		var vertices = [];
+		var parents = [];
+		var next_parents = [];
+
+		for (var i = 0; i < depth; i++) {
+			for (var j = 0; j < Math.pow(2, i); j++) {
+				var cur = this.add_vertex();
+				vertices.push(cur);
+				next_parents.push(cur);
+
+				// The root doesn't have any parents.
+				if (parents.length > 0) {
+					this.add_edge(cur, parents[Math.floor(j / 2)]);
+				}
+			}
+
+			parents = next_parents;
+			next_parents = [];
+		}
+
+		return vertices;
+	},
+	insert_potentially_complete_graph: function (n, edge_prob) {
+		var vertices = [];
+
+		for (var i = 0; i < n; i++) {
+			vertices.push(this.add_vertex());
+		}
+
+		for (var i = 0; i < vertices.length; i++) {
+			for (var j = i + 1; j < vertices.length; j++) {
+				if (edge_prob !== undefined && Math.random() > edge_prob) {
+					continue;
+				}
+
+				this.add_edge(vertices[i], vertices[j]);
+			}
+		}
+
+		return vertices;
+	},
+	insert_complete_graph: function (n) {
+		return this.insert_potentially_complete_graph(n);
+	},
+	insert_random_graph: function (max_n) {
+		if (max_n < 2) {
+			return [];
+		}
+
+		var n = 1 + Math.floor(Math.random() * max_n);
+
+		return this.insert_potentially_complete_graph(n, 0.5);
 	}
 };
