@@ -98,7 +98,7 @@ Graph.prototype = {
 	add_edge: function (v1, v2) {
 		// Not if it already exists or if it connects a vertex with itself.
 		if (v2 in this.edges[v1] || v1 == v2) {
-			return false;
+			return null;
 		}
 
 		var e = new this.edge_class(v1, v2);
@@ -117,7 +117,7 @@ Graph.prototype = {
 	remove_edge: function (v1, v2) {
 		// Not if it doesn't exist.
 		if (!(v2 in this.edges[v1])) {
-			return false;
+			return null;
 		}
 
 		var e = this.edges[v1][v2];

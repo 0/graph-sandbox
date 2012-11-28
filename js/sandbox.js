@@ -517,29 +517,25 @@ extend_class(Graph, VisualGraph, {
 	add_edge: function (v1, v2) {
 		var edge = Graph.prototype.add_edge.call(this, v1, v2);
 
-		if (!edge) {
-			return false;
+		if (edge !== null) {
+			edge.move_end(v1, this.get_vertex(v1).get_position());
+			edge.move_end(v2, this.get_vertex(v2).get_position());
+
+			this.set_vertex_label(v1);
+			this.set_vertex_label(v2);
 		}
-
-		edge.move_end(v1, this.get_vertex(v1).get_position());
-		edge.move_end(v2, this.get_vertex(v2).get_position());
-
-		this.set_vertex_label(v1);
-		this.set_vertex_label(v2);
 
 		return edge;
 	},
 	remove_edge: function (v1, v2) {
 		var edge = Graph.prototype.remove_edge.call(this, v1, v2);
 
-		if (!edge) {
-			return false;
+		if (edge !== null) {
+			edge.destroy();
+
+			this.set_vertex_label(v1);
+			this.set_vertex_label(v2);
 		}
-
-		edge.destroy();
-
-		this.set_vertex_label(v1);
-		this.set_vertex_label(v2);
 
 		return edge;
 	},
@@ -551,7 +547,7 @@ extend_class(Graph, VisualGraph, {
 			}
 		}
 
-		return false;
+		return null;
 	},
 	unhighlight_all: function () {
 		for (var i = 0; i < this.vertices.length; i++) {
@@ -671,7 +667,7 @@ function start_edge_action(start_vertex, color, end_function) {
 
 		var end_vertex = G.vertex_at_position(point);
 
-		if (end_vertex !== false) {
+		if (end_vertex !== null) {
 			end_function(start_vertex, end_vertex);
 		}
 
@@ -731,7 +727,7 @@ function onMouseMove(event) {
 
 			tool_cleanup['show_neighbours']();
 
-			if (vertex === false) {
+			if (vertex === null) {
 				return;
 			}
 
@@ -766,7 +762,7 @@ function onMouseDown(event) {
 			case 'move_vertex':
 				var vertex = G.vertex_at_position(event.point);
 
-				if (vertex === false) {
+				if (vertex === null) {
 					return;
 				}
 
@@ -786,7 +782,7 @@ function onMouseDown(event) {
 				} else {
 					var vertex = G.vertex_at_position(event.point);
 
-					if (vertex !== false) {
+					if (vertex !== null) {
 						G.remove_vertex(vertex);
 					}
 				}
@@ -795,7 +791,7 @@ function onMouseDown(event) {
 			case 'add_edge':
 				var vertex = G.vertex_at_position(event.point);
 
-				if (vertex !== false) {
+				if (vertex !== null) {
 					start_edge_action(vertex, '#00ff00', bind(G, 'add_edge'));
 				}
 				return;
@@ -803,7 +799,7 @@ function onMouseDown(event) {
 			case 'delete_edge':
 				var vertex = G.vertex_at_position(event.point);
 
-				if (vertex !== false) {
+				if (vertex !== null) {
 					start_edge_action(vertex, '#ff0000', bind(G, 'remove_edge'));
 				}
 				return;
@@ -824,7 +820,7 @@ function onMouseDown(event) {
 			case 'run_dfs':
 				var vertex = G.vertex_at_position(event.point);
 
-				if (vertex === false) {
+				if (vertex === null) {
 					return;
 				}
 
@@ -845,7 +841,7 @@ function onMouseDown(event) {
 			case 'run_bfs':
 				var vertex = G.vertex_at_position(event.point);
 
-				if (vertex === false) {
+				if (vertex === null) {
 					return;
 				}
 
