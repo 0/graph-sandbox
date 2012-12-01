@@ -78,8 +78,8 @@ add_toolbox_spacer();
 add_toolbox_button('pan_view', 'Pan', 'p', 'Drag.');
 add_toolbox_button('show_neighbours', 'Neighbours', 'n', 'Hover.');
 add_toolbox_spacer();
-add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex.');
-add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex.');
+add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex. Optionally drag to target.');
+add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex. Optionally drag to target.');
 add_toolbox_spacer();
 add_toolbox_button('insert_binary_tree', 'Insert binary tree', 't', 'Click.');
 add_toolbox_button('insert_complete_graph', 'Insert complete graph', null, 'Click.');
@@ -90,6 +90,14 @@ label_instructions.fillColor = 'white';
 label_instructions.content = '[L]: none, ID, degree';
 
 tool_cleanup['show_neighbours'] = function () {
+	G.unhighlight_all();
+};
+
+tool_cleanup['run_dfs'] = function () {
+	G.unhighlight_all();
+};
+
+tool_cleanup['run_bfs'] = function () {
 	G.unhighlight_all();
 };
 
@@ -450,8 +458,12 @@ extend_class(Edge, VisualEdge, {
 
 		return this;
 	},
-	highlight: function () {
-		this.image.strokeColor = 'white';
+	highlight: function (color) {
+		if (color === undefined) {
+			color = 'white';
+		}
+
+		this.image.strokeColor = color;
 		this.image.strokeWidth = 3;
 
 		return this;
@@ -652,7 +664,7 @@ var release_function;
 
 // Start an edge action at a vertices, draw a path following the mouse, and
 // call the completion callback end_function when the mouse is released.
-function start_edge_action(start_vertex, color, end_function) {
+function vertex_pair_action(start_vertex, color, end_function, allow_same) {
 	var path = new Path();
 	path.strokeColor = color;
 	path.add(G.get_vertex(start_vertex).get_position());
@@ -667,7 +679,7 @@ function start_edge_action(start_vertex, color, end_function) {
 
 		var end_vertex = G.vertex_at_position(point);
 
-		if (end_vertex !== null) {
+		if (allow_same || end_vertex !== null) {
 			end_function(start_vertex, end_vertex);
 		}
 
@@ -689,6 +701,20 @@ function start_search(search_step) {
 		G.unhighlight_all();
 
 		enable_tools();
+	}
+}
+
+function end_search(path) {
+	animation_teardown();
+
+	if (path !== undefined && path.length > 0) {
+		// Show the found path.
+		G.get_vertex(path[0]).highlight();
+
+		for (var i = 1; i < path.length; i++) {
+			G.get_vertex(path[i]).highlight();
+			G.get_edge(path[i - 1], path[i]).highlight('red');
+		}
 	}
 }
 
@@ -792,7 +818,7 @@ function onMouseDown(event) {
 				var vertex = G.vertex_at_position(event.point);
 
 				if (vertex !== null) {
-					start_edge_action(vertex, '#00ff00', bind(G, 'add_edge'));
+					vertex_pair_action(vertex, '#00ff00', bind(G, 'add_edge'), false);
 				}
 				return;
 
@@ -800,7 +826,7 @@ function onMouseDown(event) {
 				var vertex = G.vertex_at_position(event.point);
 
 				if (vertex !== null) {
-					start_edge_action(vertex, '#ff0000', bind(G, 'remove_edge'));
+					vertex_pair_action(vertex, '#ff0000', bind(G, 'remove_edge'), false);
 				}
 				return;
 
@@ -824,18 +850,27 @@ function onMouseDown(event) {
 					return;
 				}
 
-				var dfs_step = G.dfs(vertex, function (c, n) {
-					// Highlight the next neighbour.
-					G.get_vertex(n).highlight();
-					G.get_edge(n, c).highlight();
-				}, function (c, p) {
-					// Unhighlight the edge along which we're backtracking.
-					G.get_edge(c, p).unhighlight();
-				}, animation_teardown);
+				vertex_pair_action(vertex, '#ffff00', function (start, target) {
+					if (vertex == target) {
+						target = null;
+					}
 
-				G.get_vertex(vertex).highlight();
+					tool_cleanup['run_dfs']();
 
-				start_search(dfs_step);
+					var dfs_step = G.dfs(vertex, target, function (c, n) {
+						// Highlight the next neighbour.
+						G.get_vertex(n).highlight();
+						G.get_edge(n, c).highlight();
+					}, function (c, p) {
+						// Unhighlight the edge along which we're backtracking.
+						G.get_edge(c, p).unhighlight();
+					}, end_search);
+
+					G.get_vertex(vertex).highlight();
+
+					start_search(dfs_step);
+				}, true);
+
 				return;
 
 			case 'run_bfs':
@@ -847,20 +882,29 @@ function onMouseDown(event) {
 
 				var highlighted_edges = [];
 
-				var bfs_step = G.bfs(vertex, function (c, n) {
-					G.get_edge(c, n).highlight();
-					highlighted_edges.push([c, n]);
-				}, function (c) {
-					G.get_vertex(c).highlight();
-
-					// Unhighlight the edge that caused it to be visited.
-					if (highlighted_edges.length > 0) {
-						var edge = highlighted_edges.splice(0, 1)[0];
-						G.get_edge(edge[0], edge[1]).unhighlight();
+				vertex_pair_action(vertex, '#3377ff', function (start, target) {
+					if (vertex == target) {
+						target = null;
 					}
-				}, animation_teardown);
 
-				start_search(bfs_step);
+					tool_cleanup['run_bfs']();
+
+					var bfs_step = G.bfs(vertex, target, function (c, n) {
+						G.get_edge(c, n).highlight();
+						highlighted_edges.push([c, n]);
+					}, function (c) {
+						G.get_vertex(c).highlight();
+
+						// Unhighlight the edge that caused it to be visited.
+						if (highlighted_edges.length > 0) {
+							var edge = highlighted_edges.splice(0, 1)[0];
+							G.get_edge(edge[0], edge[1]).unhighlight();
+						}
+					}, end_search);
+
+					start_search(bfs_step);
+				}, true);
+
 				return;
 
 			case 'insert_binary_tree':

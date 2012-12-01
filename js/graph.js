@@ -134,7 +134,7 @@ Graph.prototype = {
 		var result = [];
 
 		for (var i in this.edges[v]) {
-			result.push(i);
+			result.push(parseInt(i));
 		}
 
 		return result;
@@ -147,17 +147,24 @@ Graph.prototype = {
 
 		return this;
 	},
-	dfs: function (start_vertex, neighbour_f, backtrack_f, end_f) {
+	dfs: function (start, target, neighbour_f, backtrack_f, end_f) {
 		var that = this;
 
 		var visited_vertices = {};
-		var vertex_stack = [start_vertex];
+		var vertex_stack = [start];
 
 		// Go through a single step of DFS.
 		return function () {
 			// Visit the top-most vertex on the stack.
 			var current_vertex = vertex_stack[vertex_stack.length - 1];
 			visited_vertices[current_vertex] = true;
+
+			if (target == current_vertex) {
+				// We've found it, so report the path.
+				end_f(vertex_stack);
+
+				return;
+			}
 
 			// Go to the next neighbour.
 			var neighbours = that.neighbours(current_vertex);
@@ -178,30 +185,38 @@ Graph.prototype = {
 			if (vertex_stack.length > 0) {
 				backtrack_f(current_vertex, vertex_stack[vertex_stack.length - 1]);
 			} else {
-				// We're done with the search.
+				// We're done with the search, having found nothing.
 				end_f();
 			}
 		};
 	},
-	bfs: function (start_vertex, neighbour_f, visit_f, end_f) {
+	bfs: function (start, target, neighbour_f, visit_f, end_f) {
 		var that = this;
 
 		var visited_vertices = {};
-		visited_vertices[start_vertex] = true;
-		var vertex_queue = [start_vertex];
+		visited_vertices[start] = true;
+		var vertex_queue = [[start]];
 
 		// Go through a single step of BFS.
 		return function () {
-			// Are we done with the search?
 			if (vertex_queue.length == 0) {
+				// We're done with the search, having found nothing.
 				end_f();
 
 				return;
 			}
 
 			// Visit the first vertex in the queue.
-			var current_vertex = vertex_queue.splice(0, 1)[0];
+			var current_path = vertex_queue.splice(0, 1)[0];
+			var current_vertex = current_path[current_path.length - 1];
 			visit_f(current_vertex);
+
+			if (target == current_vertex) {
+				// We've found it, so report the path.
+				end_f(current_path);
+
+				return;
+			}
 
 			// Queue all the neighbours.
 			var neighbours = that.neighbours(current_vertex);
@@ -210,7 +225,9 @@ Graph.prototype = {
 				if (!(neighbours[i] in visited_vertices)) {
 					neighbour_f(current_vertex, neighbours[i]);
 
-					vertex_queue.push(neighbours[i]);
+					var new_path = current_path.slice(0);
+					new_path.push(neighbours[i]);
+					vertex_queue.push(new_path);
 
 					// Make sure that it doesn't get queued again.
 					visited_vertices[neighbours[i]] = true;
