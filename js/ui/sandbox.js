@@ -72,11 +72,12 @@ function add_toolbox_spacer() {
 }
 
 add_toolbox_button('add_vertex', 'Add vertex', 'v', 'Click.');
-add_toolbox_button('move_vertex', 'Move vertex', 'm', 'Drag a vertex.');
+add_toolbox_button('move_vertex', 'Move vertex', 'm', 'Drag a vertex. Selection is moved together.');
 add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click. Shift-click to clear.');
 add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
 add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
 add_toolbox_spacer();
+add_toolbox_button('select', 'Select', 's', 'Click or drag. Hold shift to add.');
 add_toolbox_button('show_neighbours', 'Neighbours', 'n', 'Hover.');
 add_toolbox_spacer();
 add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex. Optionally drag to target.');
@@ -395,6 +396,8 @@ function VisualVertex() {
 	// Zero-indexed unique display ID.
 	this.id = null;
 
+	this.selected = false;
+
 	this.set_default_appearance();
 };
 
@@ -434,6 +437,18 @@ extend_class(Vertex, VisualVertex, {
 	},
 	unhighlight: function () {
 		this.set_default_appearance();
+
+		return this;
+	},
+	select: function () {
+		this.image.selected = true;
+		this.selected = true;
+
+		return this;
+	},
+	unselect: function () {
+		this.image.selected = false;
+		this.selected = false;
 
 		return this;
 	},
@@ -621,6 +636,24 @@ extend_class(Graph, VisualGraph, {
 
 		for (var i in this.edges) {
 			this.edges[i].unhighlight();
+		}
+
+		return this;
+	},
+	selected_vertices: function () {
+		var result = [];
+
+		for (var i in this.vertices) {
+			if (this.vertices[i].selected) {
+				result.push(this.vertices[i])
+			}
+		}
+
+		return result;
+	},
+	unselect_all: function () {
+		for (var i in this.vertices) {
+			this.vertices[i].unselect();
 		}
 
 		return this;
@@ -879,14 +912,29 @@ function onMouseDown(event) {
 				return;
 
 			case 'move_vertex':
-				var vertex = G.vertex_at_position(event.point);
+				var clicked = G.vertex_at_position(event.point);
+				var vertices;
 
-				if (vertex === null) {
+				if (clicked === null) {
+					// Nothing to do.
 					return;
+				} else if (clicked.selected) {
+					// Move all selected vertices together.
+					vertices = G.selected_vertices();
+				} else {
+					vertices = [clicked];
+				}
+
+				var offsets = [];
+
+				for (var i = 0; i < vertices.length; i++) {
+					offsets[i] = vertices[i].get_position() - event.point;
 				}
 
 				drag_function = function (point) {
-					G.move_vertex(vertex, point);
+					for (var i = 0; i < vertices.length; i++) {
+						G.move_vertex(vertices[i], point + offsets[i]);
+					}
 				}
 
 				release_function = function (point) {
@@ -920,6 +968,53 @@ function onMouseDown(event) {
 
 				if (vertex !== null) {
 					vertex_pair_action(vertex, '#ff0000', bind(G, 'remove_edge'), false);
+				}
+				return;
+
+			case 'select':
+				var root_point = event.point;
+
+				var selection_rectangle = null;
+				var selection_path = null;
+
+				var clear_rectangle = function () {
+					if (selection_rectangle) {
+						selection_rectangle = null;
+					}
+
+					if (selection_path) {
+						selection_path.remove();
+						selection_path = null;
+					}
+				}
+
+				drag_function = function (point) {
+					clear_rectangle();
+
+					selection_rectangle = new Rectangle(root_point, point);
+
+					selection_path = new Path.Rectangle(selection_rectangle);
+					selection_path.strokeColor = '#009dec';
+					selection_path.dashArray = [4, 2];
+				}
+
+				release_function = function (point) {
+					if (!Key.isDown('shift')) {
+						G.unselect_all();
+					}
+
+					for (var i in G.vertices) {
+						if (selection_rectangle &&
+								selection_rectangle.contains(G.vertices[i].get_position()) ||
+								G.vertices[i].get_circle().hitTest(point)) {
+							G.vertices[i].select();
+						}
+					}
+
+					clear_rectangle();
+
+					drag_function = false;
+					release_function = false;
 				}
 				return;
 
