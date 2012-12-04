@@ -94,6 +94,10 @@ var pan_instructions = new PointText(toolbox_button_posn + new Point(5, 40));
 pan_instructions.fillColor = 'white';
 pan_instructions.content = '(ctrl/apple + drag) to pan';
 
+var scale_instructions = new PointText(toolbox_button_posn + new Point(5, 60));
+scale_instructions.fillColor = 'white';
+scale_instructions.content = '(ctrl/apple + shift + drag) to scale';
+
 tool_cleanup['show_neighbours'] = function () {
 	G.unhighlight_all();
 };
@@ -823,10 +827,31 @@ function onMouseMove(event) {
 
 function onMouseDown(event) {
 	if (Key.isDown('control') || Key.isDown('command')) {
-		var root_point = graph_group.position - event.point;
+		if (Key.isDown('shift')) {
+			// Scale.
+			var root_point = event.point;
+			var original_offsets = {}
 
-		drag_function = function (point) {
-			graph_group.position = root_point + point;
+			for (var i in G.vertices) {
+				original_offsets[i] = G.vertices[i].get_position() - root_point;
+			}
+
+			drag_function = function (point) {
+				var scaling = Math.exp((root_point.y - point.y) / 500);
+
+				for (var i in G.vertices) {
+					if (i in original_offsets) {
+						G.move_vertex(G.vertices[i], root_point + original_offsets[i] * scaling);
+					}
+				}
+			}
+		} else {
+			// Pan.
+			var root_point = graph_group.position - event.point;
+
+			drag_function = function (point) {
+				graph_group.position = root_point + point;
+			}
 		}
 
 		release_function = function (point) {
