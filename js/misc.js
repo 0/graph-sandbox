@@ -20,3 +20,7 @@ function extend_class(Sup, Sub, properties) {
 		Sub.prototype[i] = properties[i];
 	}
 }
+
+// No operation.
+function noop() {
+}

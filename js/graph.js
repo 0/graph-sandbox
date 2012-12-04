@@ -36,6 +36,8 @@ function Graph(vertex_class, edge_class) {
 	// The values of each element are the Edge objects for the edges. Note that
 	// each is stored twice (once in the list of each vertex incident to the edge).
 	this.edges = [];
+
+	this._num_edges = 0;
 }
 
 Graph.prototype = {
@@ -104,6 +106,8 @@ Graph.prototype = {
 		this.get_vertex(v1).add_neighbour();
 		this.get_vertex(v2).add_neighbour();
 
+		this._num_edges++;
+
 		return e;
 	},
 	get_edge: function (v1, v2) {
@@ -123,7 +127,15 @@ Graph.prototype = {
 		this.get_vertex(v1).remove_neighbour();
 		this.get_vertex(v2).remove_neighbour();
 
+		this._num_edges--;
+
 		return e;
+	},
+	num_vertices: function () {
+		return this.vertices.length;
+	},
+	num_edges: function () {
+		return this._num_edges;
 	},
 	neighbours: function (v) {
 		var result = [];
