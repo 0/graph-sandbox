@@ -22,13 +22,13 @@ test('neighbours', function () {
 	v1.add_neighbour(v3);
 	v3.add_neighbour(v1);
 
-	equal(2, v1.degree);
-	equal(1, v2.degree);
-	equal(1, v3.degree);
+	equal(v1.degree, 2);
+	equal(v2.degree, 1);
+	equal(v3.degree, 1);
 
-	deepEqual([v2, v3], v1.list_neighbours());
-	deepEqual([v1], v2.list_neighbours());
-	deepEqual([v1], v3.list_neighbours());
+	deepEqual(v1.list_neighbours(), [v2, v3]);
+	deepEqual(v2.list_neighbours(), [v1]);
+	deepEqual(v3.list_neighbours(), [v1]);
 
 	// 1 -- 2
 	v1.remove_neighbour(v2);
@@ -37,13 +37,13 @@ test('neighbours', function () {
 	v1.remove_neighbour(v3);
 	v3.remove_neighbour(v1);
 
-	equal(0, v1.degree);
-	equal(0, v2.degree);
-	equal(0, v3.degree);
+	equal(v1.degree, 0);
+	equal(v2.degree, 0);
+	equal(v3.degree, 0);
 
-	deepEqual([], v1.list_neighbours());
-	deepEqual([], v2.list_neighbours());
-	deepEqual([], v3.list_neighbours());
+	deepEqual(v1.list_neighbours(), []);
+	deepEqual(v2.list_neighbours(), []);
+	deepEqual(v3.list_neighbours(), []);
 });
 
 
@@ -60,7 +60,7 @@ test('same names', function () {
 
 	var e = new Edge(v1, v2);
 
-	equal(n1, e.toString());
+	equal(e.toString(), n1);
 });
 
 
@@ -69,8 +69,8 @@ test('same names', function () {
 test('empty graph', function () {
 	var G = new Graph(Vertex, Edge);
 
-	equal(0, G.num_vertices);
-	equal(0, G.num_edges);
+	equal(G.num_vertices, 0);
+	equal(G.num_edges, 0);
 });
 
 test('one vertex', function () {
@@ -78,12 +78,12 @@ test('one vertex', function () {
 
 	var v1 = G.add_vertex();
 
-	equal(1, G.num_vertices);
-	equal(0, G.num_edges);
+	equal(G.num_vertices, 1);
+	equal(G.num_edges, 0);
 
-	equal(0, v1.degree);
+	equal(v1.degree, 0);
 
-	deepEqual([], v1.list_neighbours());
+	deepEqual(v1.list_neighbours(), []);
 });
 
 test('one edge', function () {
@@ -94,14 +94,14 @@ test('one edge', function () {
 
 	var e1 = G.add_edge(v1, v2);
 
-	equal(2, G.num_vertices);
-	equal(1, G.num_edges);
+	equal(G.num_vertices, 2);
+	equal(G.num_edges, 1);
 
-	equal(1, v1.degree);
-	equal(1, v2.degree);
+	equal(v1.degree, 1);
+	equal(v2.degree, 1);
 
-	deepEqual([v2], v1.list_neighbours());
-	deepEqual([v1], v2.list_neighbours());
+	deepEqual(v1.list_neighbours(), [v2]);
+	deepEqual(v2.list_neighbours(), [v1]);
 });
 
 test('remove', function () {
@@ -114,14 +114,14 @@ test('remove', function () {
 
 	G.remove_vertex(v2);
 
-	equal(1, G.num_vertices);
-	equal(0, G.num_edges);
+	equal(G.num_vertices, 1);
+	equal(G.num_edges, 0);
 
-	equal(0, v1.degree);
-	equal(0, v2.degree);
+	equal(v1.degree, 0);
+	equal(v2.degree, 0);
 
-	deepEqual([], v1.list_neighbours());
-	deepEqual([], v2.list_neighbours());
+	deepEqual(v1.list_neighbours(), []);
+	deepEqual(v2.list_neighbours(), []);
 });
 
 test('clear', function () {
@@ -134,11 +134,11 @@ test('clear', function () {
 
 	G.clear();
 
-	equal(0, G.num_vertices);
-	equal(0, G.num_edges);
+	equal(G.num_vertices, 0);
+	equal(G.num_edges, 0);
 
-	deepEqual([], v1.list_neighbours());
-	deepEqual([], v2.list_neighbours());
+	deepEqual(v1.list_neighbours(), []);
+	deepEqual(v2.list_neighbours(), []);
 });
 
 test('insert_binary_tree', function () {
@@ -147,19 +147,19 @@ test('insert_binary_tree', function () {
 	var v1 = G.add_vertex();
 
 	var t0 = G.insert_binary_tree(0);
-	equal(0, t0.length);
+	equal(t0.length, 0);
 
 	var t1 = G.insert_binary_tree(1);
-	equal(1, t1.length);
+	equal(t1.length, 1);
 
 	var t4 = G.insert_binary_tree(4);
-	equal(15, t4.length);
+	equal(t4.length, 15);
 
-	equal(17, G.num_vertices);
-	equal(14, G.num_edges);
+	equal(G.num_vertices, 17);
+	equal(G.num_edges, 14);
 
-	deepEqual([t4[1], t4[2]], t4[0].list_neighbours());
-	deepEqual([t4[1], t4[9], t4[10]], t4[4].list_neighbours());
+	deepEqual(t4[0].list_neighbours(), [t4[1], t4[2]]);
+	deepEqual(t4[4].list_neighbours(), [t4[1], t4[9], t4[10]]);
 });
 
 
@@ -169,11 +169,11 @@ test('insert_complete_graph', function () {
 	var c1 = G.insert_complete_graph(2);
 	var c2 = G.insert_complete_graph(7);
 
-	equal(9, G.num_vertices);
-	equal(22, G.num_edges);
+	equal(G.num_vertices, 9);
+	equal(G.num_edges, 22);
 
-	deepEqual([c1[1]], c1[0].list_neighbours());
-	deepEqual(c2.slice(1), c2[0].list_neighbours());
+	deepEqual(c1[0].list_neighbours(), [c1[1]]);
+	deepEqual(c2[0].list_neighbours(), c2.slice(1));
 });
 
 test('insert_random_graph', function () {
@@ -203,14 +203,14 @@ function test_search(f, start, target, success) {
 		dfs();
 	}
 
-	equal(-1, remaining_steps);
+	equal(remaining_steps, -1, 'Exceeded step limit.');
 
 	if (success) {
 		ok(found_path.length >= 2);
-		equal(start, found_path[0]);
-		equal(target, found_path[found_path.length - 1]);
+		equal(found_path[0], start);
+		equal(found_path[found_path.length - 1], target);
 	} else {
-		deepEqual(undefined, found_path);
+		equal(found_path, undefined);
 	}
 }
 

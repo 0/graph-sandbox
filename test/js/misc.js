@@ -10,11 +10,11 @@ test('bind', function () {
 	var a1 = new F(2357);
 	var a2 = new F(1113);
 
-	equal(2357, a1.f());
-	equal(1113, a2.f());
+	equal(a1.f(), 2357);
+	equal(a2.f(), 1113);
 
-	equal(2357, bind(a1, 'f')());
-	equal(1113, bind(a2, 'f')());
+	equal(bind(a1, 'f')(), 2357);
+	equal(bind(a2, 'f')(), 1113);
 });
 
 test('extend_class', function () {
@@ -56,12 +56,12 @@ test('extend_class', function () {
 	ok(b instanceof A);
 	ok(b instanceof B);
 
-	equal(1719, a.f());
-	equal(undefined, a.g);
-	equal(3438, a.h());
-	equal(2329, b.f());
-	equal(3137, b.g());
-	equal(6987, b.h());
+	equal(a.f(), 1719);
+	equal(a.g, undefined);
+	equal(a.h(), 3438);
+	equal(b.f(), 2329);
+	equal(b.g(), 3137);
+	equal(b.h(), 6987);
 });
 
 test('make_uid_function', function () {
