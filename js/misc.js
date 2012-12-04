@@ -21,6 +21,17 @@ function extend_class(Sup, Sub, properties) {
 	}
 }
 
+// Generate a function that will return a unique string each time it is called.
+function make_uid_function() {
+	var last_uid = 0;
+
+	return function () {
+		last_uid++;
+
+		return last_uid.toString(36);
+	};
+}
+
 // No operation.
 function noop() {
 }

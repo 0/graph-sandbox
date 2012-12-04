@@ -356,7 +356,7 @@ default_layer.activate();
 
 var graph_group = new Group([edge_layer, vertex_layer]);
 
-function VisualVertex(point) {
+function VisualVertex() {
 	Vertex.call(this);
 
 	var circle = new Path.Circle(0, circle_radius);
@@ -372,7 +372,9 @@ function VisualVertex(point) {
 	this.image = new Group([circle, label_text]);
 	default_layer.activate();
 
-	this.image.position = point;
+	// Zero-indexed unique display ID.
+	this.id = null;
+
 	this.set_default_appearance();
 };
 
@@ -490,96 +492,111 @@ function VisualGraph(vertex_class, edge_class) {
 
 extend_class(Graph, VisualGraph, {
 	add_vertex: function (point) {
-		var n = Graph.prototype.add_vertex.call(this);
+		var v = Graph.prototype.add_vertex.call(this);
 
 		if (point !== undefined) {
-			this.get_vertex(n).set_position(point);
+			v.set_position(point);
 		}
 
-		this.set_vertex_label(n);
+		v.id = this.num_vertices - 1;
 
-		return n;
+		this.set_vertex_label(v);
+
+		return v;
 	},
 	move_vertex: function (v, point) {
-		this.vertices[v].set_position(point);
+		v.set_position(point);
 
-		for (var i in this.edges[v]) {
-			this.edges[v][i].move_end(v, point);
+		for (var i in v.neighbours) {
+			this.get_edge(v, v.neighbours[i]).move_end(v, point);
 		}
 
 		return this;
 	},
 	remove_vertex: function (v) {
-		var vertex = Graph.prototype.remove_vertex.call(this, v);
+		var id = v.id;
 
-		if (vertex !== null) {
-			vertex.destroy();
+		v = Graph.prototype.remove_vertex.call(this, v);
+
+		if (v !== null) {
+			v.destroy();
 
 			// Update all the labels on the later vertices.
-			for (var i = v; i < this.vertices.length; i++) {
-				this.set_vertex_label(i);
+			for (var i in this.vertices) {
+				if (this.vertices[i].id > id) {
+					this.vertices[i].id--;
+					this.set_vertex_label(this.vertices[i]);
+				}
 			}
 		}
+
+		return v;
 	},
 	set_vertex_label: function (v) {
-		var vertex = this.get_vertex(v);
-
 		switch (this.vertex_label_mode) {
 			case 0:
-				vertex.set_label('');
+				v.set_label('');
 				break;
 			case 1:
-				vertex.set_label(v);
+				v.set_label(v.id);
 				break;
 			case 2:
-				vertex.set_label(vertex.degree);
+				v.set_label(v.degree);
 				break;
 		}
 
 		return this;
 	},
 	add_edge: function (v1, v2) {
-		var edge = Graph.prototype.add_edge.call(this, v1, v2);
+		var e = Graph.prototype.add_edge.call(this, v1, v2);
 
-		if (edge !== null) {
-			edge.move_end(v1, this.get_vertex(v1).get_position());
-			edge.move_end(v2, this.get_vertex(v2).get_position());
+		if (e !== null) {
+			e.move_end(v1, v1.get_position());
+			e.move_end(v2, v2.get_position());
 
 			this.set_vertex_label(v1);
 			this.set_vertex_label(v2);
 		}
 
-		return edge;
+		return e;
 	},
 	remove_edge: function (v1, v2) {
-		var edge = Graph.prototype.remove_edge.call(this, v1, v2);
+		var e = Graph.prototype.remove_edge.call(this, v1, v2);
 
-		if (edge !== null) {
-			edge.destroy();
+		if (e !== null) {
+			e.destroy();
 
 			this.set_vertex_label(v1);
 			this.set_vertex_label(v2);
 		}
 
-		return edge;
+		return e;
 	},
 	// Get the vertex sitting at the given position, if there is one.
 	vertex_at_position: function (point) {
-		for (var i = this.vertices.length - 1; i >= 0; i--) {
-			if (this.vertices[i].image.hitTest(point)) {
-				return i;
+		var max_v = null;
+
+		for (var i in this.vertices) {
+			var v = this.vertices[i];
+
+			if (v.image.hitTest(point)) {
+				// Prefer the one with the highest UID, since that one will be
+				// on top and is the one actually clicked.
+				if (max_v === null || v.uid > max_v.uid) {
+					max_v = v;
+				}
 			}
 		}
 
-		return null;
+		return max_v;
 	},
 	unhighlight_all: function () {
-		for (var i = 0; i < this.vertices.length; i++) {
+		for (var i in this.vertices) {
 			this.vertices[i].unhighlight();
+		}
 
-			for (var j in this.edges[i]) {
-				this.edges[i][j].unhighlight();
-			}
+		for (var i in this.edges) {
+			this.edges[i].unhighlight();
 		}
 
 		return this;
@@ -587,8 +604,8 @@ extend_class(Graph, VisualGraph, {
 	toggle_vertex_label_mode: function () {
 		this.vertex_label_mode = (this.vertex_label_mode + 1) % 3;
 
-		for (var i = 0; i < this.vertices.length; i++) {
-			this.set_vertex_label(i);
+		for (var i in this.vertices) {
+			this.set_vertex_label(this.vertices[i]);
 		}
 
 		return this;
@@ -679,7 +696,7 @@ var release_function;
 function vertex_pair_action(start_vertex, color, end_function, allow_same) {
 	var path = new Path();
 	path.strokeColor = color;
-	path.add(G.get_vertex(start_vertex).get_position());
+	path.add(start_vertex.get_position());
 
 	drag_function = function (point) {
 		path.add(point);
@@ -721,10 +738,10 @@ function end_search(path) {
 
 	if (path !== undefined && path.length > 0) {
 		// Show the found path.
-		G.get_vertex(path[0]).highlight();
+		path[0].highlight();
 
 		for (var i = 1; i < path.length; i++) {
-			G.get_vertex(path[i]).highlight();
+			path[i].highlight();
 			G.get_edge(path[i - 1], path[i]).highlight('red');
 		}
 	}
@@ -769,10 +786,10 @@ function onMouseMove(event) {
 				return;
 			}
 
-			var neighbours = G.neighbours(vertex);
+			var neighbours = vertex.list_neighbours();
 
 			for (var i = 0; i < neighbours.length; i++) {
-				G.get_vertex(neighbours[i]).highlight();
+				neighbours[i].highlight();
 				G.get_edge(vertex, neighbours[i]).highlight();
 			}
 
@@ -871,14 +888,14 @@ function onMouseDown(event) {
 
 					var dfs_step = G.dfs(vertex, target, function (c, n) {
 						// Highlight the next neighbour.
-						G.get_vertex(n).highlight();
+						n.highlight();
 						G.get_edge(n, c).highlight();
 					}, function (c, p) {
 						// Unhighlight the edge along which we're backtracking.
 						G.get_edge(c, p).unhighlight();
 					}, end_search);
 
-					G.get_vertex(vertex).highlight();
+					vertex.highlight();
 
 					start_search(dfs_step);
 				}, true);
@@ -905,7 +922,7 @@ function onMouseDown(event) {
 						G.get_edge(c, n).highlight();
 						highlighted_edges.push([c, n]);
 					}, function (c) {
-						G.get_vertex(c).highlight();
+						c.highlight();
 
 						// Unhighlight the edge that caused it to be visited.
 						if (highlighted_edges.length > 0) {

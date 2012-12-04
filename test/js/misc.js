@@ -63,3 +63,20 @@ test('extend_class', function () {
 	equal(3137, b.g());
 	equal(6987, b.h());
 });
+
+test('make_uid_function', function () {
+	var f1 = make_uid_function();
+	var f2 = make_uid_function();
+
+	var uids1 = {}, uids2 = {};
+
+	for (var i = 0; i < 1000; i++) {
+		var n1 = f1(), n2 = f2();
+
+		ok(!(n1 in uids1), n1);
+		ok(!(n2 in uids2), n2);
+
+		uids1[n1] = true;
+		uids2[n2] = true;
+	}
+});

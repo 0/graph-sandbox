@@ -1,21 +1,73 @@
 function Vertex() {
+	this.uid = this.generate_uid();
+
+	// Object of Vertex objects.
+	this.neighbours = {};
+
 	this.degree = 0;
 }
 
 Vertex.prototype = {
-	add_neighbour: function () {
-		this.degree++;
+	toString: function () {
+		return 'v' + this.uid;
 	},
-	remove_neighbour: function () {
-		this.degree--;
-	}
-}
+	generate_uid: make_uid_function(),
+	add_neighbour: function (v) {
+		if (v in this.neighbours) {
+			return null;
+		}
 
+		this.neighbours[v] = v;
+
+		this.degree++;
+
+		return v;
+	},
+	remove_neighbour: function (v) {
+		if (!(v in this.neighbours)) {
+			return null;
+		}
+
+		delete this.neighbours[v];
+
+		this.degree--;
+
+		return v;
+	},
+	list_neighbours: function () {
+		var result = [];
+
+		for (var i in this.neighbours) {
+			result.push(this.neighbours[i]);
+		}
+
+		return result;
+	}
+};
 
 function Edge(v1, v2) {
 	this.v1 = v1;
 	this.v2 = v2;
 }
+
+Edge.prototype = {
+	generate_name: function (v1, v2) {
+		v1 = v1.toString();
+		v2 = v2.toString();
+
+		// Ensure that v1 <= v2.
+		if (v2 < v1) {
+			var tmp = v2;
+			v2 = v1;
+			v1 = tmp;
+		}
+
+		return v1 + ':' + v2;
+	},
+	toString: function () {
+		return this.generate_name(this.v1, this.v2);
+	}
+};
 
 
 function Graph(vertex_class, edge_class) {
@@ -23,133 +75,91 @@ function Graph(vertex_class, edge_class) {
 	this.vertex_class = vertex_class;
 	this.edge_class = edge_class;
 
-	// Array of Vertex objects corresponding to the vertices.
-	this.vertices = [];
+	// Object of Vertex objects.
+	this.vertices = {};
 
-	// Array of objects of Edge objects, implementing an incidence list.
-	//
-	// Each element corresponds to the element of the vertices array with the same
-	// index. The keys of each element are also indices into the vertices array,
-	// where the presence of a key signifies the existence of an edge between the
-	// two vertices.
-	//
-	// The values of each element are the Edge objects for the edges. Note that
-	// each is stored twice (once in the list of each vertex incident to the edge).
-	this.edges = [];
+	this.num_vertices = 0;
 
-	this._num_edges = 0;
+	// Object of Edge objects.
+	this.edges = {};
+
+	this.num_edges = 0;
 }
 
 Graph.prototype = {
 	add_vertex: function () {
-		var n = this.vertices.length;
 		var v = new this.vertex_class();
 
-		this.vertices.push(v);
-		this.edges.push({});
+		this.vertices[v] = v;
 
-		return n;
-	},
-	get_vertex: function (v) {
-		return this.vertices[v];
+		this.num_vertices++;
+
+		return v;
 	},
 	remove_vertex: function (v) {
-		var vertex = this.vertices[v];
+		// Not if it doesn't exist.
+		if (!(v in this.vertices)) {
+			return null;
+		}
 
 		// Remove all the edges connected to this vertex.
-		for (var i in this.edges[v]) {
-			this.remove_edge(v, i);
+		for (var i in v.neighbours) {
+			this.remove_edge(v, v.neighbours[i]);
 		}
 
-		// Get rid of the vertex by shuffling all the vertices that have greater
-		// indices.
-		this.vertices.splice(v, 1);
-		this.edges.splice(v, 1);
+		delete this.vertices[v];
 
-		// Adjust all the later vertex indices.
-		for (var i = 0; i < this.edges.length; i++) {
-			var new_edge = {};
+		this.num_vertices--;
 
-			for (var j in this.edges[i]) {
-				var edge = this.edges[i][j];
-
-				new_edge[j > v ? j - 1 : j] = edge;
-
-				// Only update each Edge object once.
-				if (i < j) {
-					if (edge.v1 > v) {
-						edge.v1--;
-					}
-
-					if (edge.v2 > v) {
-						edge.v2--;
-					}
-				}
-			}
-
-			this.edges[i] = new_edge;
-		}
-
-		return vertex;
+		return v;
 	},
 	add_edge: function (v1, v2) {
+		var name = Edge.prototype.generate_name(v1, v2);
+
 		// Not if it already exists or if it connects a vertex with itself.
-		if (v2 in this.edges[v1] || v1 == v2) {
+		if (name in this.edges || v1 == v2) {
 			return null;
 		}
 
 		var e = new this.edge_class(v1, v2);
 
-		this.edges[v1][v2] = e;
-		this.edges[v2][v1] = e;
+		this.edges[e] = e;
 
-		this.get_vertex(v1).add_neighbour();
-		this.get_vertex(v2).add_neighbour();
+		v1.add_neighbour(v2);
+		v2.add_neighbour(v1);
 
-		this._num_edges++;
+		this.num_edges++;
 
 		return e;
 	},
 	get_edge: function (v1, v2) {
-		return this.edges[v1][v2];
+		var name = Edge.prototype.generate_name(v1, v2);
+
+		return this.edges[name];
 	},
 	remove_edge: function (v1, v2) {
+		var name = Edge.prototype.generate_name(v1, v2);
+
 		// Not if it doesn't exist.
-		if (!(v2 in this.edges[v1])) {
+		if (!(name in this.edges)) {
 			return null;
 		}
 
-		var e = this.edges[v1][v2];
+		var e = this.edges[name];
 
-		delete this.edges[v1][v2];
-		delete this.edges[v2][v1];
+		delete this.edges[name];
 
-		this.get_vertex(v1).remove_neighbour();
-		this.get_vertex(v2).remove_neighbour();
+		v1.remove_neighbour(v2);
+		v2.remove_neighbour(v1);
 
-		this._num_edges--;
+		this.num_edges--;
 
 		return e;
 	},
-	num_vertices: function () {
-		return this.vertices.length;
-	},
-	num_edges: function () {
-		return this._num_edges;
-	},
-	neighbours: function (v) {
-		var result = [];
-
-		for (var i in this.edges[v]) {
-			result.push(parseInt(i));
-		}
-
-		return result;
-	},
 	// Remove all vertices and edges.
 	clear: function () {
-		while (this.vertices.length > 0) {
-			this.remove_vertex(0);
+		for (var i in this.vertices) {
+			this.remove_vertex(this.vertices[i]);
 		}
 
 		return this;
@@ -211,8 +221,6 @@ Graph.prototype = {
 		return this._insert_potentially_complete_graph(n, 0.5);
 	},
 	dfs: function (start, target, neighbour_f, backtrack_f, end_f) {
-		var that = this;
-
 		var visited_vertices = {};
 		var vertex_stack = [start];
 
@@ -230,7 +238,7 @@ Graph.prototype = {
 			}
 
 			// Go to the next neighbour.
-			var neighbours = that.neighbours(current_vertex);
+			var neighbours = current_vertex.list_neighbours();
 
 			for (var i = 0; i < neighbours.length; i++) {
 				if (!(neighbours[i] in visited_vertices)) {
@@ -254,8 +262,6 @@ Graph.prototype = {
 		};
 	},
 	bfs: function (start, target, neighbour_f, visit_f, end_f) {
-		var that = this;
-
 		var visited_vertices = {};
 		visited_vertices[start] = true;
 		var vertex_queue = [[start]];
@@ -282,7 +288,7 @@ Graph.prototype = {
 			}
 
 			// Queue all the neighbours.
-			var neighbours = that.neighbours(current_vertex);
+			var neighbours = current_vertex.list_neighbours();
 
 			for (var i = 0; i < neighbours.length; i++) {
 				if (!(neighbours[i] in visited_vertices)) {
