@@ -52,6 +52,8 @@ Graph.prototype = {
 		return this.vertices[v];
 	},
 	remove_vertex: function (v) {
+		var vertex = this.vertices[v];
+
 		// Remove all the edges connected to this vertex.
 		for (var i in this.edges[v]) {
 			this.remove_edge(v, i);
@@ -59,14 +61,7 @@ Graph.prototype = {
 
 		// Get rid of the vertex by shuffling all the vertices that have greater
 		// indices.
-		this.vertices[v].destroy();
 		this.vertices.splice(v, 1);
-
-		// Update all the labels on the later vertices.
-		for (var i = v; i < this.vertices.length; i++) {
-			this.set_vertex_label(i);
-		}
-
 		this.edges.splice(v, 1);
 
 		// Adjust all the later vertex indices.
@@ -93,7 +88,7 @@ Graph.prototype = {
 			this.edges[i] = new_edge;
 		}
 
-		return this;
+		return vertex;
 	},
 	add_edge: function (v1, v2) {
 		// Not if it already exists or if it connects a vertex with itself.
@@ -146,6 +141,62 @@ Graph.prototype = {
 		}
 
 		return this;
+	},
+	insert_binary_tree: function (depth) {
+		var vertices = [];
+
+		var parents = [];
+		var next_parents = [];
+
+		for (var i = 0; i < depth; i++) {
+			for (var j = 0; j < Math.pow(2, i); j++) {
+				var cur = this.add_vertex();
+				vertices.push(cur);
+				next_parents.push(cur);
+
+				// The root doesn't have any parents.
+				if (parents.length > 0) {
+					this.add_edge(cur, parents[Math.floor(j / 2)]);
+				}
+			}
+
+			parents = next_parents;
+			next_parents = [];
+		}
+
+		return vertices;
+	},
+	_insert_potentially_complete_graph: function (n, edge_prob) {
+		var vertices = [];
+
+		for (var i = 0; i < n; i++) {
+			vertices.push(this.add_vertex());
+		}
+
+		for (var i = 0; i < vertices.length; i++) {
+			for (var j = i + 1; j < vertices.length; j++) {
+				if (edge_prob !== undefined && Math.random() > edge_prob) {
+					continue;
+				}
+
+				this.add_edge(vertices[i], vertices[j]);
+			}
+		}
+
+		return vertices;
+	},
+	insert_complete_graph: function (n) {
+		return this._insert_potentially_complete_graph(n);
+	},
+	insert_random_graph: function (max_n) {
+		if (max_n < 2) {
+			return [];
+		}
+
+		// [1, max_n]
+		var n = 1 + Math.floor(Math.random() * max_n);
+
+		return this._insert_potentially_complete_graph(n, 0.5);
 	},
 	dfs: function (start, target, neighbour_f, backtrack_f, end_f) {
 		var that = this;
@@ -234,59 +285,5 @@ Graph.prototype = {
 				}
 			}
 		};
-	},
-	insert_binary_tree: function (depth) {
-		var vertices = [];
-		var parents = [];
-		var next_parents = [];
-
-		for (var i = 0; i < depth; i++) {
-			for (var j = 0; j < Math.pow(2, i); j++) {
-				var cur = this.add_vertex();
-				vertices.push(cur);
-				next_parents.push(cur);
-
-				// The root doesn't have any parents.
-				if (parents.length > 0) {
-					this.add_edge(cur, parents[Math.floor(j / 2)]);
-				}
-			}
-
-			parents = next_parents;
-			next_parents = [];
-		}
-
-		return vertices;
-	},
-	insert_potentially_complete_graph: function (n, edge_prob) {
-		var vertices = [];
-
-		for (var i = 0; i < n; i++) {
-			vertices.push(this.add_vertex());
-		}
-
-		for (var i = 0; i < vertices.length; i++) {
-			for (var j = i + 1; j < vertices.length; j++) {
-				if (edge_prob !== undefined && Math.random() > edge_prob) {
-					continue;
-				}
-
-				this.add_edge(vertices[i], vertices[j]);
-			}
-		}
-
-		return vertices;
-	},
-	insert_complete_graph: function (n) {
-		return this.insert_potentially_complete_graph(n);
-	},
-	insert_random_graph: function (max_n) {
-		if (max_n < 2) {
-			return [];
-		}
-
-		var n = 1 + Math.floor(Math.random() * max_n);
-
-		return this.insert_potentially_complete_graph(n, 0.5);
 	}
 };

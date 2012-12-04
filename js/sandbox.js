@@ -509,6 +509,18 @@ extend_class(Graph, VisualGraph, {
 
 		return this;
 	},
+	remove_vertex: function (v) {
+		var vertex = Graph.prototype.remove_vertex.call(this, v);
+
+		if (vertex !== null) {
+			vertex.destroy();
+
+			// Update all the labels on the later vertices.
+			for (var i = v; i < this.vertices.length; i++) {
+				this.set_vertex_label(i);
+			}
+		}
+	},
 	set_vertex_label: function (v) {
 		var vertex = this.get_vertex(v);
 
@@ -605,7 +617,7 @@ extend_class(Graph, VisualGraph, {
 		return vertices;
 	},
 	// Arrange the given vertices in the shape of a regular polygon.
-	arrange_polygonally: function (vertices, center_position) {
+	_arrange_polygonally: function (vertices, center_position) {
 		var angle_step, radius;
 
 		if (vertices.length == 1) {
@@ -633,7 +645,7 @@ extend_class(Graph, VisualGraph, {
 		var vertices = Graph.prototype.insert_complete_graph.call(this, n);
 
 		if (center_position !== undefined) {
-			this.arrange_polygonally(vertices, center_position);
+			this._arrange_polygonally(vertices, center_position);
 		}
 
 		return vertices;
@@ -642,7 +654,7 @@ extend_class(Graph, VisualGraph, {
 		var vertices = Graph.prototype.insert_random_graph.call(this, max_n);
 
 		if (center_position !== undefined) {
-			this.arrange_polygonally(vertices, center_position);
+			this._arrange_polygonally(vertices, center_position);
 		}
 
 		return vertices;
