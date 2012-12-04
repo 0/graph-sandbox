@@ -887,6 +887,14 @@ function onMouseMove(event) {
 
 function onMouseDown(event) {
 	if (Key.isDown('control') || Key.isDown('command')) {
+		var h_line = new Path.Line(new Point(0, event.point.y), new Point(view.viewSize.width, event.point.y));
+		var v_line = new Path.Line(new Point(event.point.x, 0), new Point(event.point.x, view.viewSize.height));
+
+		h_line.strokeColor = v_line.strokeColor = '#aa5500';
+
+		var guides = new Group([h_line, v_line]);
+		guides.moveBelow(graph_group);
+
 		if (Key.isDown('shift')) {
 			// Scale.
 			var root_point = event.point;
@@ -924,6 +932,8 @@ function onMouseDown(event) {
 		}
 
 		release_function = function (point) {
+			guides.remove();
+
 			drag_function = false;
 			release_function = false;
 		}
