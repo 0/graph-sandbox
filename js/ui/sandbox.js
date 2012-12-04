@@ -77,7 +77,6 @@ add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click. Shift-click to
 add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
 add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
 add_toolbox_spacer();
-add_toolbox_button('pan_view', 'Pan', 'p', 'Drag.');
 add_toolbox_button('show_neighbours', 'Neighbours', 'n', 'Hover.');
 add_toolbox_spacer();
 add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex. Optionally drag to target.');
@@ -90,6 +89,10 @@ add_toolbox_button('insert_random_graph', 'Insert random graph', null, 'Click.')
 var label_instructions = new PointText(toolbox_button_posn + new Point(5, 20));
 label_instructions.fillColor = 'white';
 label_instructions.content = '[L]: none, ID, degree';
+
+var pan_instructions = new PointText(toolbox_button_posn + new Point(5, 40));
+pan_instructions.fillColor = 'white';
+pan_instructions.content = '(ctrl/apple + drag) to pan';
 
 tool_cleanup['show_neighbours'] = function () {
 	G.unhighlight_all();
@@ -819,6 +822,21 @@ function onMouseMove(event) {
 }
 
 function onMouseDown(event) {
+	if (Key.isDown('control') || Key.isDown('command')) {
+		var root_point = graph_group.position - event.point;
+
+		drag_function = function (point) {
+			graph_group.position = root_point + point;
+		}
+
+		release_function = function (point) {
+			drag_function = false;
+			release_function = false;
+		}
+
+		return;
+	}
+
 	if (tools_enabled) {
 		// Toolbox buttons always take precedence.
 		for (var i in toolbox_buttons) {
@@ -877,19 +895,6 @@ function onMouseDown(event) {
 
 				if (vertex !== null) {
 					vertex_pair_action(vertex, '#ff0000', bind(G, 'remove_edge'), false);
-				}
-				return;
-
-			case 'pan_view':
-				var root_point = graph_group.position - event.point;
-
-				drag_function = function (point) {
-					graph_group.position = root_point + point;
-				}
-
-				release_function = function (point) {
-					drag_function = false;
-					release_function = false;
 				}
 				return;
 
