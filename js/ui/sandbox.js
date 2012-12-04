@@ -99,9 +99,9 @@ var pan_instructions = new PointText(toolbox_button_posn + new Point(5, 60));
 pan_instructions.fillColor = 'white';
 pan_instructions.content = '(ctrl/apple + drag) to pan';
 
-var scale_instructions = new PointText(toolbox_button_posn + new Point(5, 80));
-scale_instructions.fillColor = 'white';
-scale_instructions.content = '(ctrl/apple + shift + drag) to scale';
+var scale_rotate_instructions = new PointText(toolbox_button_posn + new Point(5, 80));
+scale_rotate_instructions.fillColor = 'white';
+scale_rotate_instructions.content = '(ctrl/apple + shift + drag) to scale/rotate';
 
 tool_cleanup['show_neighbours'] = function () {
 	G.unhighlight_all();
@@ -896,7 +896,7 @@ function onMouseDown(event) {
 		guides.moveBelow(graph_group);
 
 		if (Key.isDown('shift')) {
-			// Scale.
+			// Scale/rotate.
 			var root_point = event.point;
 
 			// Only use the selected vertices.
@@ -916,10 +916,20 @@ function onMouseDown(event) {
 			}
 
 			drag_function = function (point) {
-				var scaling = Math.exp((root_point.y - point.y) / 500);
+				var scaling = 1, rotation = 0;
+
+				if (Math.abs(root_point.y - point.y) > 10) {
+					scaling = Math.exp((root_point.y - point.y) / 500);
+				}
+
+				if (Math.abs(root_point.x - point.x) > 10) {
+					rotation = (root_point.x - point.x) / 2;
+				}
 
 				for (var i = 0; i < vertices.length; i++) {
-					G.move_vertex(vertices[i], root_point + original_offsets[i] * scaling);
+					var pos = (root_point + original_offsets[i] * scaling).rotate(rotation, root_point);
+
+					G.move_vertex(vertices[i], pos);
 				}
 			}
 		} else {
