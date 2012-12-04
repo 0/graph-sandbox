@@ -91,11 +91,15 @@ var label_instructions = new PointText(toolbox_button_posn + new Point(5, 20));
 label_instructions.fillColor = 'white';
 label_instructions.content = '[L]: none, ID, degree';
 
-var pan_instructions = new PointText(toolbox_button_posn + new Point(5, 40));
+var select_all_instructions = new PointText(toolbox_button_posn + new Point(5, 40));
+select_all_instructions.fillColor = 'white';
+select_all_instructions.content = '[ctrl/apple + A]: select all';
+
+var pan_instructions = new PointText(toolbox_button_posn + new Point(5, 60));
 pan_instructions.fillColor = 'white';
 pan_instructions.content = '(ctrl/apple + drag) to pan';
 
-var scale_instructions = new PointText(toolbox_button_posn + new Point(5, 60));
+var scale_instructions = new PointText(toolbox_button_posn + new Point(5, 80));
 scale_instructions.fillColor = 'white';
 scale_instructions.content = '(ctrl/apple + shift + drag) to scale';
 
@@ -640,6 +644,13 @@ extend_class(Graph, VisualGraph, {
 
 		return this;
 	},
+	select_all: function () {
+		for (var i in this.vertices) {
+			this.vertices[i].select();
+		}
+
+		return this;
+	},
 	selected_vertices: function () {
 		var result = [];
 
@@ -825,10 +836,19 @@ function onKeyDown(event) {
 		}
 	}
 
-	switch (event.key) {
-		case 'l':
-			G.toggle_vertex_label_mode();
-			return;
+	if (Key.isDown('control') || Key.isDown('command')) {
+		switch (event.key) {
+			case 'a':
+				G.select_all();
+				event.preventDefault();
+				return;
+		}
+	} else {
+		switch (event.key) {
+			case 'l':
+				G.toggle_vertex_label_mode();
+				return;
+		}
 	}
 }
 
