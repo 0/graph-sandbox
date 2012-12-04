@@ -890,19 +890,28 @@ function onMouseDown(event) {
 		if (Key.isDown('shift')) {
 			// Scale.
 			var root_point = event.point;
-			var original_offsets = {}
 
-			for (var i in G.vertices) {
-				original_offsets[i] = G.vertices[i].get_position() - root_point;
+			// Only use the selected vertices.
+			var vertices = G.selected_vertices();
+
+			if (vertices.length === 0) {
+				// If nothing is selected, use all vertices.
+				for (var i in G.vertices) {
+					vertices.push(G.vertices[i]);
+				}
+			}
+
+			var original_offsets = [];
+
+			for (var i = 0; i < vertices.length; i++) {
+				original_offsets.push(vertices[i].get_position() - root_point);
 			}
 
 			drag_function = function (point) {
 				var scaling = Math.exp((root_point.y - point.y) / 500);
 
-				for (var i in G.vertices) {
-					if (i in original_offsets) {
-						G.move_vertex(G.vertices[i], root_point + original_offsets[i] * scaling);
-					}
+				for (var i = 0; i < vertices.length; i++) {
+					G.move_vertex(vertices[i], root_point + original_offsets[i] * scaling);
 				}
 			}
 		} else {
