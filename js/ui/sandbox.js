@@ -1,3 +1,5 @@
+var store = get_local_storage();
+
 /*************
  *  Toolbox  *
  *************/
@@ -248,6 +250,33 @@ add_animation_control_spacer();
 add_animation_control_button('slower', 'Slower', '-', ['_']);
 add_animation_control_button('faster', 'Faster', '=', ['+']);
 
+function set_animation_delay(value) {
+	animation_delay = value;
+
+	// Assume both buttons are active again.
+	set_animation_control_button_color('slower', animation_control_button_color_active);
+	set_animation_control_button_color('faster', animation_control_button_color_active);
+
+	// Deal with edge cases.
+	if (animation_delay >= animation_delay_max) {
+		animation_delay = animation_delay_max;
+
+		set_animation_control_button_color('slower', animation_control_button_color_inactive);
+	} else if (animation_delay <= animation_delay_min) {
+		animation_delay = animation_delay_min;
+
+		set_animation_control_button_color('faster', animation_control_button_color_inactive);
+	}
+
+	if (store) {
+		store.setItem('animation_delay', animation_delay);
+	}
+}
+
+if (store && store.getItem('animation_delay')) {
+	set_animation_delay(parseInt(store.getItem('animation_delay')));
+}
+
 function get_time() {
 	return new Date().getTime();
 }
@@ -304,27 +333,11 @@ function animation_action_dispatch(name) {
 			toggle_animation_pause();
 			return;
 		case 'slower':
-			animation_delay *= animation_delay_factor;
-
-			set_animation_control_button_color('faster', animation_control_button_color_active);
-
-			if (animation_delay >= animation_delay_max) {
-				animation_delay = animation_delay_max;
-
-				set_animation_control_button_color('slower', animation_control_button_color_inactive);
-			}
+			set_animation_delay(animation_delay * animation_delay_factor);
 
 			return;
 		case 'faster':
-			animation_delay /= animation_delay_factor;
-
-			set_animation_control_button_color('slower', animation_control_button_color_active);
-
-			if (animation_delay <= animation_delay_min) {
-				animation_delay = animation_delay_min;
-
-				set_animation_control_button_color('faster', animation_control_button_color_inactive);
-			}
+			set_animation_delay(animation_delay / animation_delay_factor);
 
 			return;
 	}
@@ -488,6 +501,10 @@ function VisualGraph(vertex_class, edge_class) {
 
 	// 0: none, 1: index, 2: degree
 	this.vertex_label_mode = 0;
+
+	if (store && store.getItem('vertex_label_mode')) {
+		this.vertex_label_mode = parseInt(store.getItem('vertex_label_mode'));
+	}
 }
 
 extend_class(Graph, VisualGraph, {
@@ -603,6 +620,10 @@ extend_class(Graph, VisualGraph, {
 	},
 	toggle_vertex_label_mode: function () {
 		this.vertex_label_mode = (this.vertex_label_mode + 1) % 3;
+
+		if (store) {
+			store.setItem('vertex_label_mode', this.vertex_label_mode);
+		}
 
 		for (var i in this.vertices) {
 			this.set_vertex_label(this.vertices[i]);
