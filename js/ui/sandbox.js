@@ -73,7 +73,7 @@ function add_toolbox_spacer() {
 
 add_toolbox_button('add_vertex', 'Add vertex', 'v', 'Click.');
 add_toolbox_button('move_vertex', 'Move vertex', 'm', 'Drag a vertex. Selection is moved together.');
-add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click. Shift-click to clear.');
+add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click. Selection is removed together.');
 add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
 add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
 add_toolbox_spacer();
@@ -944,14 +944,20 @@ function onMouseDown(event) {
 				return;
 
 			case 'remove_vertex':
-				if (Key.isDown('shift')) {
-					G.clear();
-				} else {
-					var vertex = G.vertex_at_position(event.point);
+				var clicked = G.vertex_at_position(event.point);
 
-					if (vertex !== null) {
-						G.remove_vertex(vertex);
+				if (clicked === null) {
+					// Nothing to do.
+					return;
+				} else if (clicked.selected) {
+					// Remove all selected vertices together.
+					vertices = G.selected_vertices();
+
+					for (var i = 0; i < vertices.length; i++) {
+						G.remove_vertex(vertices[i]);
 					}
+				} else {
+					G.remove_vertex(clicked);
 				}
 				return;
 

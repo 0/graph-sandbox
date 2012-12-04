@@ -156,14 +156,6 @@ Graph.prototype = {
 
 		return e;
 	},
-	// Remove all vertices and edges.
-	clear: function () {
-		for (var i in this.vertices) {
-			this.remove_vertex(this.vertices[i]);
-		}
-
-		return this;
-	},
 	insert_binary_tree: function (depth) {
 		var vertices = [];
 

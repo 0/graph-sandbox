@@ -124,23 +124,6 @@ test('remove', function () {
 	setEqual(v2.list_neighbours(), []);
 });
 
-test('clear', function () {
-	var G = new Graph(Vertex, Edge);
-
-	var v1 = G.add_vertex();
-	var v2 = G.add_vertex();
-
-	var e1 = G.add_edge(v1, v2);
-
-	G.clear();
-
-	equal(G.num_vertices, 0);
-	equal(G.num_edges, 0);
-
-	setEqual(v1.list_neighbours(), []);
-	setEqual(v2.list_neighbours(), []);
-});
-
 test('insert_binary_tree', function () {
 	var G = new Graph(Vertex, Edge);
 
