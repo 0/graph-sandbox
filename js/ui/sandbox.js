@@ -77,7 +77,7 @@ add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click. Selection is r
 add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
 add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
 add_toolbox_spacer();
-add_toolbox_button('select', 'Select', 's', 'Click or drag. Hold shift to add.');
+add_toolbox_button('select', 'Select', 's', 'Click or drag. Hold shift to toggle (click) or add (drag).');
 add_toolbox_button('show_neighbours', 'Neighbours', 'n', 'Hover.');
 add_toolbox_spacer();
 add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex. Optionally drag to target.');
@@ -455,6 +455,13 @@ extend_class(Vertex, VisualVertex, {
 		this.selected = false;
 
 		return this;
+	},
+	toggle_selection: function () {
+		if (this.selected) {
+			return this.unselect();
+		} else {
+			return this.select();
+		}
 	},
 	destroy: function () {
 		this.image.remove();
@@ -1029,11 +1036,17 @@ function onMouseDown(event) {
 						G.unselect_all();
 					}
 
-					for (var i in G.vertices) {
-						if (selection_rectangle &&
-								selection_rectangle.contains(G.vertices[i].get_position()) ||
-								G.vertices[i].get_circle().hitTest(point)) {
-							G.vertices[i].select();
+					if (selection_rectangle) {
+						for (var i in G.vertices) {
+							if (selection_rectangle.contains(G.vertices[i].get_position())) {
+								G.vertices[i].select();
+							}
+						}
+					} else {
+						var v = G.vertex_at_position(point);
+
+						if (v) {
+							v.toggle_selection();
 						}
 					}
 
