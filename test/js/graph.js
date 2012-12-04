@@ -26,9 +26,9 @@ test('neighbours', function () {
 	equal(v2.degree, 1);
 	equal(v3.degree, 1);
 
-	deepEqual(v1.list_neighbours(), [v2, v3]);
-	deepEqual(v2.list_neighbours(), [v1]);
-	deepEqual(v3.list_neighbours(), [v1]);
+	setEqual(v1.list_neighbours(), [v2, v3]);
+	setEqual(v2.list_neighbours(), [v1]);
+	setEqual(v3.list_neighbours(), [v1]);
 
 	// 1 -- 2
 	v1.remove_neighbour(v2);
@@ -41,9 +41,9 @@ test('neighbours', function () {
 	equal(v2.degree, 0);
 	equal(v3.degree, 0);
 
-	deepEqual(v1.list_neighbours(), []);
-	deepEqual(v2.list_neighbours(), []);
-	deepEqual(v3.list_neighbours(), []);
+	setEqual(v1.list_neighbours(), []);
+	setEqual(v2.list_neighbours(), []);
+	setEqual(v3.list_neighbours(), []);
 });
 
 
@@ -83,7 +83,7 @@ test('one vertex', function () {
 
 	equal(v1.degree, 0);
 
-	deepEqual(v1.list_neighbours(), []);
+	setEqual(v1.list_neighbours(), []);
 });
 
 test('one edge', function () {
@@ -100,8 +100,8 @@ test('one edge', function () {
 	equal(v1.degree, 1);
 	equal(v2.degree, 1);
 
-	deepEqual(v1.list_neighbours(), [v2]);
-	deepEqual(v2.list_neighbours(), [v1]);
+	setEqual(v1.list_neighbours(), [v2]);
+	setEqual(v2.list_neighbours(), [v1]);
 });
 
 test('remove', function () {
@@ -120,8 +120,8 @@ test('remove', function () {
 	equal(v1.degree, 0);
 	equal(v2.degree, 0);
 
-	deepEqual(v1.list_neighbours(), []);
-	deepEqual(v2.list_neighbours(), []);
+	setEqual(v1.list_neighbours(), []);
+	setEqual(v2.list_neighbours(), []);
 });
 
 test('clear', function () {
@@ -137,8 +137,8 @@ test('clear', function () {
 	equal(G.num_vertices, 0);
 	equal(G.num_edges, 0);
 
-	deepEqual(v1.list_neighbours(), []);
-	deepEqual(v2.list_neighbours(), []);
+	setEqual(v1.list_neighbours(), []);
+	setEqual(v2.list_neighbours(), []);
 });
 
 test('insert_binary_tree', function () {
@@ -158,8 +158,8 @@ test('insert_binary_tree', function () {
 	equal(G.num_vertices, 17);
 	equal(G.num_edges, 14);
 
-	deepEqual(t4[0].list_neighbours(), [t4[1], t4[2]]);
-	deepEqual(t4[4].list_neighbours(), [t4[1], t4[9], t4[10]]);
+	setEqual(t4[0].list_neighbours(), [t4[2], t4[1]]);
+	setEqual(t4[4].list_neighbours(), [t4[1], t4[9], t4[10]]);
 });
 
 
@@ -172,8 +172,8 @@ test('insert_complete_graph', function () {
 	equal(G.num_vertices, 9);
 	equal(G.num_edges, 22);
 
-	deepEqual(c1[0].list_neighbours(), [c1[1]]);
-	deepEqual(c2[0].list_neighbours(), c2.slice(1));
+	setEqual(c1[0].list_neighbours(), [c1[1]]);
+	setEqual(c2[0].list_neighbours(), c2.slice(1));
 });
 
 test('insert_random_graph', function () {
