@@ -99,6 +99,7 @@ function add_extra_instructions(contents) {
 }
 
 add_extra_instructions('[L]: none, ID, degree');
+add_extra_instructions('[del]: remove selection');
 add_extra_instructions('[ctrl/apple + A]: select all');
 add_extra_instructions('(ctrl/apple + drag) to pan');
 add_extra_instructions('(ctrl/apple + shift + drag) to scale/rotate');
@@ -582,6 +583,13 @@ extend_class(Graph, VisualGraph, {
 
 		return v;
 	},
+	remove_selected: function () {
+		vertices = this.selected_vertices();
+
+		for (var i = 0; i < vertices.length; i++) {
+			this.remove_vertex(vertices[i]);
+		}
+	},
 	set_vertex_label: function (v) {
 		switch (this.vertex_label_mode) {
 			case 0:
@@ -857,6 +865,8 @@ function onKeyDown(event) {
 			case 'l':
 				G.toggle_vertex_label_mode();
 				return;
+			case 'delete':
+				G.remove_selected();
 		}
 	}
 }
@@ -1008,12 +1018,7 @@ function onMouseDown(event) {
 					// Nothing to do.
 					return;
 				} else if (clicked.selected) {
-					// Remove all selected vertices together.
-					vertices = G.selected_vertices();
-
-					for (var i = 0; i < vertices.length; i++) {
-						G.remove_vertex(vertices[i]);
-					}
+					G.remove_selected();
 				} else {
 					G.remove_vertex(clicked);
 				}
