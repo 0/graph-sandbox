@@ -87,21 +87,21 @@ add_toolbox_button('insert_binary_tree', 'Insert binary tree', 't', 'Click.');
 add_toolbox_button('insert_complete_graph', 'Insert complete graph', null, 'Click.');
 add_toolbox_button('insert_random_graph', 'Insert random graph', null, 'Click.');
 
-var label_instructions = new PointText(toolbox_button_posn + new Point(5, 20));
-label_instructions.fillColor = 'white';
-label_instructions.content = '[L]: none, ID, degree';
+var extra_instructions_offset = new Point(5, 20);
 
-var select_all_instructions = new PointText(toolbox_button_posn + new Point(5, 40));
-select_all_instructions.fillColor = 'white';
-select_all_instructions.content = '[ctrl/apple + A]: select all';
+function add_extra_instructions(contents) {
+	var text = new PointText(toolbox_button_posn + extra_instructions_offset);
 
-var pan_instructions = new PointText(toolbox_button_posn + new Point(5, 60));
-pan_instructions.fillColor = 'white';
-pan_instructions.content = '(ctrl/apple + drag) to pan';
+	text.fillColor = 'white';
+	text.content = contents;
 
-var scale_rotate_instructions = new PointText(toolbox_button_posn + new Point(5, 80));
-scale_rotate_instructions.fillColor = 'white';
-scale_rotate_instructions.content = '(ctrl/apple + shift + drag) to scale/rotate';
+	extra_instructions_offset.y += 20;
+}
+
+add_extra_instructions('[L]: none, ID, degree');
+add_extra_instructions('[ctrl/apple + A]: select all');
+add_extra_instructions('(ctrl/apple + drag) to pan');
+add_extra_instructions('(ctrl/apple + shift + drag) to scale/rotate');
 
 tool_cleanup['show_neighbours'] = function () {
 	G.unhighlight_all();
