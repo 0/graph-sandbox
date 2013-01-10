@@ -924,8 +924,8 @@ function onMouseDown(event) {
 					scaling = Math.exp((root_point.y - point.y) / 500);
 				}
 
-				if (Math.abs(root_point.x - point.x) > 10) {
-					rotation = (root_point.x - point.x) / 2;
+				if (Math.abs(point.x - root_point.x) > 10) {
+					rotation = (point.x - root_point.x) / 2;
 				}
 
 				for (var i = 0; i < vertices.length; i++) {
