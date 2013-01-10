@@ -846,6 +846,8 @@ function onKeyDown(event) {
 	if (Key.isDown('control') || Key.isDown('command')) {
 		switch (event.key) {
 			case 'a':
+			// Opera seems to report the resulting control character.
+			case '\x01':
 				G.select_all();
 				event.preventDefault();
 				return;
