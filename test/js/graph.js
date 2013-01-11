@@ -63,6 +63,26 @@ test('same names', function () {
 	equal(e.toString(), n1);
 });
 
+test('weight', function () {
+	var v1 = new Vertex();
+	var v2 = new Vertex();
+
+	var e = new Edge(v1, v2);
+
+	e.max_weight = 3;
+
+	equal(e.weight, 0);
+	e.lighter();
+	equal(e.weight, 0);
+
+	e.heavier();
+	equal(e.weight, 1);
+	e.heavier(4);
+	equal(e.weight, 3);
+	e.lighter();
+	equal(e.weight, 2);
+});
+
 
 // Graph
 

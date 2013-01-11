@@ -48,6 +48,12 @@ Vertex.prototype = {
 function Edge(v1, v2) {
 	this.v1 = v1;
 	this.v2 = v2;
+
+	this.min_weight = 0;
+	this.max_weight = Infinity;
+
+	// A non-negative, potentially bounded, integral weight.
+	this.weight = 0;
 }
 
 Edge.prototype = {
@@ -66,6 +72,32 @@ Edge.prototype = {
 	},
 	toString: function () {
 		return this.generate_name(this.v1, this.v2);
+	},
+	lighter: function (amount) {
+		if (amount === undefined) {
+			amount = 1;
+		}
+
+		this.weight -= amount;
+
+		if (this.weight < this.min_weight) {
+			this.weight = this.min_weight;
+		}
+
+		return this;
+	},
+	heavier: function (amount) {
+		if (amount === undefined) {
+			amount = 1;
+		}
+
+		this.weight += amount;
+
+		if (this.weight > this.max_weight) {
+			this.weight = this.max_weight;
+		}
+
+		return this;
 	}
 };
 
