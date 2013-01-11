@@ -31,6 +31,8 @@ var toolbox_button_posn = new Point(toolbox_button_posn_init);
 
 var tool_help = {};
 var tool_hotkey_actions = {};
+var tool_setup = {};
+var tool_data = {};
 var tool_cleanup = {};
 
 var tool_help_text = new PointText(toolbox_button_posn + new Point(button_size.width + 10, 15));
@@ -131,6 +133,8 @@ function set_active_tool(name) {
 		if (current_tool in tool_cleanup) {
 			tool_cleanup[current_tool]();
 		}
+
+		tool_data = {};
 	}
 
 	current_tool = name;
@@ -140,6 +144,10 @@ function set_active_tool(name) {
 		draw_help_text(tool_help[name]);
 	} else {
 		draw_help_text('');
+	}
+
+	if (current_tool in tool_setup) {
+		tool_setup[current_tool]();
 	}
 }
 
@@ -772,7 +780,8 @@ var G = new VisualGraph(VisualVertex, VisualEdge);
  *****************/
 
 // Don't draw too many points.
-tool.minDistance = 20;
+var default_minDistance = 20;
+tool.minDistance = default_minDistance;
 
 // Callbacks, configured elsewhere.
 var drag_function;
@@ -880,7 +889,7 @@ function onMouseMove(event) {
 		case 'show_neighbours':
 			var vertex = G.vertex_at_position(event.point);
 
-			tool_cleanup['show_neighbours']();
+			G.unhighlight_all();
 
 			if (vertex === null) {
 				return;
@@ -1105,7 +1114,7 @@ function onMouseDown(event) {
 						target = null;
 					}
 
-					tool_cleanup['run_dfs']();
+					G.unhighlight_all();
 
 					var dfs_step = G.dfs(vertex, target, function (c, n) {
 						// Highlight the next neighbour.
@@ -1137,7 +1146,7 @@ function onMouseDown(event) {
 						target = null;
 					}
 
-					tool_cleanup['run_bfs']();
+					G.unhighlight_all();
 
 					var bfs_step = G.bfs(vertex, target, function (c, n) {
 						G.get_edge(c, n).highlight();
