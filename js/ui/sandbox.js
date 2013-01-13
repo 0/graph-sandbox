@@ -78,6 +78,7 @@ add_toolbox_button('move_vertex', 'Move vertex', 'm', 'Drag a vertex. Selection 
 add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click. Selection is removed together.');
 add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
 add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
+add_toolbox_button('change_weight', 'Change edge weight', 'w', 'Click (with shift) to make heavier (lighter).');
 add_toolbox_spacer();
 add_toolbox_button('select', 'Select', 's', 'Click or drag. Hold shift to toggle (click) or add (drag).');
 add_toolbox_button('show_neighbours', 'Neighbours', 'n', 'Hover.');
@@ -105,6 +106,16 @@ add_extra_instructions('[del]: remove selection');
 add_extra_instructions('[ctrl/apple + A]: select all');
 add_extra_instructions('(ctrl/apple + drag) to pan');
 add_extra_instructions('(ctrl/apple + shift + drag) to scale/rotate');
+
+tool_setup['change_weight'] = function () {
+	tool.minDistance = 2;
+};
+
+tool_cleanup['change_weight'] = function () {
+	tool.minDistance = default_minDistance;
+
+	G.unhighlight_all();
+};
 
 tool_cleanup['show_neighbours'] = function () {
 	G.unhighlight_all();
@@ -483,6 +494,12 @@ extend_class(Vertex, VisualVertex, {
 function VisualEdge(v1, v2) {
 	Edge.call(this, v1, v2);
 
+	// Make sure edges don't disappear or get too fat.
+	this.min_weight = 1;
+	this.max_weight = 30;
+	// Start out with a nice thickness.
+	this.weight = 3;
+
 	edge_layer.activate();
 	this.image = new Path();
 	default_layer.activate();
@@ -494,9 +511,12 @@ function VisualEdge(v1, v2) {
 }
 
 extend_class(Edge, VisualEdge, {
+	_update_width: function () {
+		this.image.strokeWidth = this.weight;
+	},
 	set_default_appearance: function () {
 		this.image.strokeColor = 'grey';
-		this.image.strokeWidth = 2;
+		this._update_width();
 
 		return this;
 	},
@@ -515,13 +535,26 @@ extend_class(Edge, VisualEdge, {
 
 		return this;
 	},
+	lighter: function (amount) {
+		Edge.prototype.lighter.call(this, amount);
+
+		this._update_width();
+
+		return this;
+	},
+	heavier: function (amount) {
+		Edge.prototype.heavier.call(this, amount);
+
+		this._update_width();
+
+		return this;
+	},
 	highlight: function (color) {
 		if (color === undefined) {
 			color = 'white';
 		}
 
 		this.image.strokeColor = color;
-		this.image.strokeWidth = 3;
 
 		return this;
 	},
@@ -655,6 +688,22 @@ extend_class(Graph, VisualGraph, {
 		}
 
 		return max_v;
+	},
+	// Get the edge closest to the given position.
+	edge_at_position: function (point) {
+		var min_edge = null, min_d = null;
+
+		for (var i in this.edges) {
+			var edge = this.edges[i];
+			var d = distanceToLineSegment(edge.v1.get_position(), edge.v2.get_position(), point);
+
+			if (min_d === null || d < min_d) {
+				min_edge = edge;
+				min_d = d;
+			}
+		}
+
+		return min_edge;
 	},
 	unhighlight_all: function () {
 		for (var i in this.vertices) {
@@ -886,6 +935,21 @@ function onMouseMove(event) {
 	}
 
 	switch (current_tool) {
+		case 'change_weight':
+			var edge = G.edge_at_position(event.point);
+
+			G.unhighlight_all();
+
+			if (edge === null) {
+				delete tool_data['edge'];
+				return;
+			}
+
+			tool_data['edge'] = edge;
+			edge.highlight();
+
+			return;
+
 		case 'show_neighbours':
 			var vertex = G.vertex_at_position(event.point);
 
@@ -1046,6 +1110,18 @@ function onMouseDown(event) {
 
 				if (vertex !== null) {
 					vertex_pair_action(vertex, '#ff0000', bind(G, 'remove_edge'), false);
+				}
+				return;
+
+			case 'change_weight':
+				if ('edge' in tool_data) {
+					edge = tool_data['edge'];
+
+					if (Key.isDown('shift')) {
+						edge.lighter();
+					} else {
+						edge.heavier();
+					}
 				}
 				return;
 
