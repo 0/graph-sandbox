@@ -177,13 +177,13 @@ function test_search(f, start, target, success) {
 	var found_path;
 	// Make sure we always terminate.
 	var remaining_steps = 1000;
-	var dfs = f(start, target, noop, noop, function (p) {
+	var step = f(start, target, noop, noop, function (p) {
 		remaining_steps = -1;
 		found_path = p;
 	});
 
 	while (remaining_steps > 0) {
-		dfs();
+		step();
 	}
 
 	equal(remaining_steps, -1, 'Exceeded step limit.');

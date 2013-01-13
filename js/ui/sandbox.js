@@ -393,7 +393,7 @@ var graph_group = new Group([edge_layer, vertex_layer]);
 function VisualVertex() {
 	Vertex.call(this);
 
-	var circle = new Path.Circle(0, circle_radius);
+	var circle = new Path.Circle(new Point(0, 0), circle_radius);
 	circle.fillColor = new HsbColor(Math.random() * 360, 0.5 + Math.random() * 0.3, 0.3 + Math.random() * 0.5);
 
 	var label_text = new PointText(circle.position);
@@ -1110,13 +1110,13 @@ function onMouseDown(event) {
 				}
 
 				vertex_pair_action(vertex, '#ffff00', function (start, target) {
-					if (vertex == target) {
+					if (start == target) {
 						target = null;
 					}
 
 					G.unhighlight_all();
 
-					var dfs_step = G.dfs(vertex, target, function (c, n) {
+					var dfs_step = G.dfs(start, target, function (c, n) {
 						// Highlight the next neighbour.
 						n.highlight();
 						G.get_edge(n, c).highlight();
@@ -1125,7 +1125,7 @@ function onMouseDown(event) {
 						G.get_edge(c, p).unhighlight();
 					}, end_search);
 
-					vertex.highlight();
+					start.highlight();
 
 					start_search(dfs_step);
 				}, true);
@@ -1142,13 +1142,13 @@ function onMouseDown(event) {
 				var highlighted_edges = [];
 
 				vertex_pair_action(vertex, '#3377ff', function (start, target) {
-					if (vertex == target) {
+					if (start == target) {
 						target = null;
 					}
 
 					G.unhighlight_all();
 
-					var bfs_step = G.bfs(vertex, target, function (c, n) {
+					var bfs_step = G.bfs(start, target, function (c, n) {
 						G.get_edge(c, n).highlight();
 						highlighted_edges.push([c, n]);
 					}, function (c) {
