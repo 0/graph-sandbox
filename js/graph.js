@@ -300,7 +300,7 @@ Graph.prototype = {
 			}
 
 			// Visit the first vertex in the queue.
-			var current_path = vertex_queue.splice(0, 1)[0];
+			var current_path = vertex_queue.shift();
 			var current_vertex = current_path[current_path.length - 1];
 			visit_f(current_vertex);
 

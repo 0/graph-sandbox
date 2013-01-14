@@ -1232,7 +1232,7 @@ function onMouseDown(event) {
 
 						// Unhighlight the edge that caused it to be visited.
 						if (highlighted_edges.length > 0) {
-							var edge = highlighted_edges.splice(0, 1)[0];
+							var edge = highlighted_edges.shift();
 							G.get_edge(edge[0], edge[1]).unhighlight();
 						}
 					}, end_search);
