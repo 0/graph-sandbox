@@ -907,6 +907,25 @@ function onKeyDown(event) {
 
 			return;
 		}
+
+		if (Key.isDown('control') || Key.isDown('command')) {
+			switch (event.key) {
+				case 'a':
+				// Opera seems to report the resulting control character.
+				case '\x01':
+					G.select_all();
+					event.preventDefault();
+					return;
+			}
+		} else {
+			switch (event.key) {
+				case 'l':
+					G.toggle_vertex_label_mode();
+					return;
+				case 'delete':
+					G.remove_selected();
+			}
+		}
 	}
 
 	if (animating) {
@@ -914,25 +933,6 @@ function onKeyDown(event) {
 			animation_action_dispatch(animation_control_hotkey_actions[event.key]);
 
 			return;
-		}
-	}
-
-	if (Key.isDown('control') || Key.isDown('command')) {
-		switch (event.key) {
-			case 'a':
-			// Opera seems to report the resulting control character.
-			case '\x01':
-				G.select_all();
-				event.preventDefault();
-				return;
-		}
-	} else {
-		switch (event.key) {
-			case 'l':
-				G.toggle_vertex_label_mode();
-				return;
-			case 'delete':
-				G.remove_selected();
 		}
 	}
 }
