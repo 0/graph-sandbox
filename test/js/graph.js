@@ -277,7 +277,7 @@ function test_dijkstra(G, start, target, path) {
 	var remaining_steps = 1000;
 	var step = G.dijkstra(start, target, function (c, n) {
 		return G.get_edge(c, n).weight;
-	}, noop, noop, function (p) {
+	}, noop, noop, noop, function (p) {
 		remaining_steps = -1;
 		found_path = p;
 	});

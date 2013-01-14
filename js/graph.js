@@ -328,7 +328,7 @@ Graph.prototype = {
 			}
 		};
 	},
-	dijkstra: function (start, target, weight_f, neighbour_f, visit_f, end_f) {
+	dijkstra: function (start, target, weight_f, distance_f, neighbour_f, visit_f, end_f) {
 		var distances = {};
 		var previouses = {};
 		var pool = {};
@@ -340,6 +340,7 @@ Graph.prototype = {
 		}
 
 		distances[start] = 0;
+		distance_f(start, distances[start]);
 
 		// Go through a single step of Dijkstra's algorithm.
 		return function () {
@@ -397,6 +398,8 @@ Graph.prototype = {
 				if (new_distance < distances[n]) {
 					distances[n] = new_distance;
 					previouses[n] = min_v;
+
+					distance_f(n, distances[n]);
 				}
 			}
 		};

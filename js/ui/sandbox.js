@@ -636,8 +636,12 @@ extend_class(Graph, VisualGraph, {
 			this.remove_vertex(vertices[i]);
 		}
 	},
-	set_vertex_label: function (v) {
-		switch (this.vertex_label_mode) {
+	set_vertex_label: function (v, mode) {
+		if (mode === undefined) {
+			mode = this.vertex_label_mode;
+		}
+
+		switch (mode) {
 			case 0:
 				v.set_label('');
 				break;
@@ -651,9 +655,9 @@ extend_class(Graph, VisualGraph, {
 
 		return this;
 	},
-	set_all_vertex_labels: function () {
+	set_all_vertex_labels: function (mode) {
 		for (var i in this.vertices) {
-			this.set_vertex_label(this.vertices[i]);
+			this.set_vertex_label(this.vertices[i], mode);
 		}
 	},
 	add_edge: function (v1, v2) {
@@ -870,8 +874,8 @@ function vertex_pair_action(start_vertex, color, end_function, allow_same) {
 	}
 }
 
-// Start a search animation with the given step function.
-function start_search(search_step) {
+// Start a search animation with the given step and cleanup functions.
+function start_search(search_step, cleanup) {
 	disable_tools();
 	animation_setup();
 
@@ -881,6 +885,10 @@ function start_search(search_step) {
 
 	animation_end = function () {
 		G.unhighlight_all();
+
+		if (cleanup !== undefined) {
+			cleanup();
+		}
 
 		enable_tools();
 	}
@@ -1264,15 +1272,23 @@ function onMouseDown(event) {
 
 					G.unhighlight_all();
 
+					// Ensure that all vertices start out blank.
+					G.set_all_vertex_labels(0);
+
 					var dijkstra_step = G.dijkstra(start, target, function (c, n) {
 						return G.get_edge(c, n).weight;
+					}, function (v, d) {
+						v.set_label(d);
 					}, function (c, n) {
 						G.get_edge(c, n).highlight();
 					}, function (c) {
 						c.highlight();
 					}, end_search);
 
-					start_search(dijkstra_step);
+					start_search(dijkstra_step, function () {
+						// Restore vertex labels.
+						G.set_all_vertex_labels();
+					});
 				}, false);
 
 				return;
