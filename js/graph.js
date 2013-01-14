@@ -327,5 +327,78 @@ Graph.prototype = {
 				}
 			}
 		};
+	},
+	dijkstra: function (start, target, weight_f, neighbour_f, visit_f, end_f) {
+		var distances = {};
+		var previouses = {};
+		var pool = {};
+
+		for (var i in this.vertices) {
+			distances[i] = Infinity;
+			previouses[i] = null;
+			pool[i] = this.vertices[i];
+		}
+
+		distances[start] = 0;
+
+		// Go through a single step of Dijkstra's algorithm.
+		return function () {
+			// Find the pending vertex with smallest distance.
+			var min_v = null, min_d = null;
+
+			for (var i in pool) {
+				var d = distances[i];
+
+				if (min_d === null || d < min_d) {
+					min_v = pool[i];
+					min_d = d;
+				}
+			}
+
+			if (min_v === null || distances[min_v] === Infinity) {
+				// Reachable vertices exhausted.
+				end_f();
+
+				return;
+			} else if (min_v === target) {
+				// Target acquired!
+				var path = [];
+				var next = target;
+
+				while (next !== null) {
+					path.unshift(next);
+					next = previouses[next];
+				}
+
+				end_f(path);
+
+				return;
+			}
+
+			// Deal with this vertex.
+			visit_f(min_v);
+			delete pool[min_v];
+
+			var neighbours = min_v.list_neighbours();
+
+			for (var i = 0; i < neighbours.length; i++) {
+				var n = neighbours[i];
+
+				// Only visit pending vertices.
+				if (!(n in pool)) {
+					continue;
+				}
+
+				neighbour_f(min_v, n);
+
+				// Update the distance to this neighbour.
+				var new_distance = distances[min_v] + weight_f(min_v, n);
+
+				if (new_distance < distances[n]) {
+					distances[n] = new_distance;
+					previouses[n] = min_v;
+				}
+			}
+		};
 	}
 };

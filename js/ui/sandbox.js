@@ -85,6 +85,7 @@ add_toolbox_button('show_neighbours', 'Neighbours', 'n', 'Hover.');
 add_toolbox_spacer();
 add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex. Optionally drag to target.');
 add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex. Optionally drag to target.');
+add_toolbox_button('run_dijkstra', "Dijkstra's algorithm", 'j', 'Click initial vertex and drag to target.');
 add_toolbox_spacer();
 add_toolbox_button('insert_binary_tree', 'Insert binary tree', 't', 'Click.');
 add_toolbox_button('insert_complete_graph', 'Insert complete graph', null, 'Click.');
@@ -126,6 +127,10 @@ tool_cleanup['run_dfs'] = function () {
 };
 
 tool_cleanup['run_bfs'] = function () {
+	G.unhighlight_all();
+};
+
+tool_cleanup['run_dijkstra'] = function () {
 	G.unhighlight_all();
 };
 
@@ -1239,6 +1244,33 @@ function onMouseDown(event) {
 
 					start_search(bfs_step);
 				}, true);
+
+				return;
+
+			case 'run_dijkstra':
+				var vertex = G.vertex_at_position(event.point);
+
+				if (vertex === null) {
+					return;
+				}
+
+				vertex_pair_action(vertex, '#3377ff', function (start, target) {
+					if (start == target) {
+						return;
+					}
+
+					G.unhighlight_all();
+
+					var dijkstra_step = G.dijkstra(start, target, function (c, n) {
+						return G.get_edge(c, n).weight;
+					}, function (c, n) {
+						G.get_edge(c, n).highlight();
+					}, function (c) {
+						c.highlight();
+					}, end_search);
+
+					start_search(dijkstra_step);
+				}, false);
 
 				return;
 

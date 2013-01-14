@@ -270,3 +270,47 @@ test('bfs_with_disconnected_target', function () {
 
 	test_search(bind(G, 'bfs'), vs2[0], vs1[1], false);
 });
+
+function test_dijkstra(G, start, target, path) {
+	var found_path;
+	// Make sure we always terminate.
+	var remaining_steps = 1000;
+	var step = G.dijkstra(start, target, function (c, n) {
+		return G.get_edge(c, n).weight;
+	}, noop, noop, function (p) {
+		remaining_steps = -1;
+		found_path = p;
+	});
+
+	while (remaining_steps > 0) {
+		step();
+	}
+
+	equal(remaining_steps, -1, 'Exceeded step limit.');
+
+	deepEqual(found_path, path);
+}
+
+test('dijkstra', function () {
+	var G = new Graph(Vertex, Edge);
+
+	var vs1 = G.insert_binary_tree(4);
+	var vs2 = G.insert_binary_tree(4);
+
+	var long_path = [vs1[0], vs1[1], vs1[3], vs1[7]];
+	var short_path = [vs1[0], vs1[7]];
+
+	// No path between components.
+	test_dijkstra(G, vs1[0], vs2[0], undefined);
+
+	// Only a single path possible in a tree.
+	test_dijkstra(G, vs1[0], vs1[7], long_path);
+
+	// Add a shortcut.
+	var shortcut = G.add_edge(vs1[0], vs1[7]);
+	test_dijkstra(G, vs1[0], vs1[7], short_path);
+
+	// Make the shortcut not worth it anymore.
+	shortcut.heavier();
+	test_dijkstra(G, vs1[0], vs1[7], long_path);
+});
