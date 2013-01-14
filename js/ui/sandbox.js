@@ -651,6 +651,11 @@ extend_class(Graph, VisualGraph, {
 
 		return this;
 	},
+	set_all_vertex_labels: function () {
+		for (var i in this.vertices) {
+			this.set_vertex_label(this.vertices[i]);
+		}
+	},
 	add_edge: function (v1, v2) {
 		var e = Graph.prototype.add_edge.call(this, v1, v2);
 
@@ -753,9 +758,7 @@ extend_class(Graph, VisualGraph, {
 			store.setItem('vertex_label_mode', this.vertex_label_mode);
 		}
 
-		for (var i in this.vertices) {
-			this.set_vertex_label(this.vertices[i]);
-		}
+		this.set_all_vertex_labels();
 
 		return this;
 	},
