@@ -86,6 +86,7 @@ add_toolbox_spacer();
 add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex. Optionally drag to target.');
 add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex. Optionally drag to target.');
 add_toolbox_button('run_dijkstra', "Dijkstra's algorithm", 'j', 'Click initial vertex and drag to target.');
+add_toolbox_button('run_prim_jarnik', "Prim-Jarnik algorithm", 'p', 'Click initial vertex.');
 add_toolbox_spacer();
 add_toolbox_button('insert_binary_tree', 'Insert binary tree', 't', 'Click.');
 add_toolbox_button('insert_complete_graph', 'Insert complete graph', null, 'Click.');
@@ -131,6 +132,10 @@ tool_cleanup['run_bfs'] = function () {
 };
 
 tool_cleanup['run_dijkstra'] = function () {
+	G.unhighlight_all();
+};
+
+tool_cleanup['run_prim_jarnik'] = function () {
 	G.unhighlight_all();
 };
 
@@ -894,16 +899,33 @@ function start_search(search_step, cleanup) {
 	}
 }
 
-function end_search(path) {
+function end_search(path, type) {
 	animation_teardown();
 
 	if (path !== undefined && path.length > 0) {
 		// Show the found path.
-		path[0].highlight();
+		switch (type) {
+			case 'edges':
+				for (var i = 0; i < path.length; i++) {
+					var e = path[i];
 
-		for (var i = 1; i < path.length; i++) {
-			path[i].highlight();
-			G.get_edge(path[i - 1], path[i]).highlight('red');
+					e.v1.highlight();
+					e.v2.highlight();
+					e.highlight('red');
+				}
+
+				break;
+
+			case 'vertices':
+			default:
+				path[0].highlight();
+
+				for (var i = 1; i < path.length; i++) {
+					path[i].highlight();
+					G.get_edge(path[i - 1], path[i]).highlight('red');
+				}
+
+				break;
 		}
 	}
 }
@@ -1290,6 +1312,29 @@ function onMouseDown(event) {
 						G.set_all_vertex_labels();
 					});
 				}, false);
+
+				return;
+
+			case 'run_prim_jarnik':
+				var vertex = G.vertex_at_position(event.point);
+
+				if (vertex === null) {
+					return;
+				}
+
+				G.unhighlight_all();
+				vertex.highlight();
+
+				var prim_jarnik_step = G.prim_jarnik(vertex, function (e) {
+					return e.weight;
+				}, function (v, e) {
+					v.highlight();
+					e.highlight();
+				}, function (path) {
+					end_search(path, 'edges');
+				});
+
+				start_search(prim_jarnik_step);
 
 				return;
 

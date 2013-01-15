@@ -403,5 +403,81 @@ Graph.prototype = {
 				}
 			}
 		};
+	},
+	prim_jarnik: function (start, weight_f, visit_f, end_f) {
+		var vertex_pool = {};
+		var edge_pool = {};
+		var result_edges = [];
+
+		// Start with all vertices except the start vertex in the vertex pool
+		// and all edges incident to the start vertex in the edge pool.
+		for (var i in this.vertices) {
+			var v = this.vertices[i];
+
+			if (v != start) {
+				vertex_pool[i] = v;
+			}
+		}
+
+		var start_neighbours = start.list_neighbours();
+
+		for (var i = 0; i < start_neighbours.length; i++) {
+			var e = this.get_edge(start, start_neighbours[i]);
+
+			edge_pool[e] = e;
+		}
+
+		var get_edge = bind(this, 'get_edge');
+
+		// Go through a single step of Prim-Jarnik.
+		return function () {
+			// Find the edge in the pool with the smallest weight.
+			var min_e = null, min_w = null;
+
+			for (var i in edge_pool) {
+				var e = edge_pool[i];
+				var w = weight_f(e);
+
+				if (min_w === null || w < min_w) {
+					min_e = e;
+					min_w = w;
+				}
+			}
+
+			// The pool is depleted, so the MST is complete.
+			if (min_e === null) {
+				end_f(result_edges);
+
+				return;
+			}
+
+			// Add the found edge to the MST, updating the pools.
+			var new_vertex = min_e.v1 in vertex_pool ? min_e.v1 : min_e.v2;
+
+			result_edges.push(min_e);
+			visit_f(new_vertex, min_e);
+
+			delete vertex_pool[new_vertex];
+
+			// If any of the edges in the edge pool had the new vertex as one
+			// of the ends, the other end must have already been in the MST.
+			// Therefore now all these edges have both ends in the MST and must
+			// be pruned from the pool.
+			//
+			// Any edges between the new vertex and vertices still in the
+			// vertex pool must be added to the edge pool.
+			var neighbours = new_vertex.list_neighbours();
+
+			for (var i = 0; i < neighbours.length; i++) {
+				var n = neighbours[i];
+				var e = get_edge(new_vertex, n);
+
+				if (e in edge_pool) {
+					delete edge_pool[e];
+				} else if (n in vertex_pool) {
+					edge_pool[e] = e;
+				}
+			}
+		};
 	}
 };

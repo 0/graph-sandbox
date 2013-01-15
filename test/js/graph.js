@@ -314,3 +314,85 @@ test('dijkstra', function () {
 	shortcut.heavier();
 	test_dijkstra(G, vs1[0], vs1[7], long_path);
 });
+
+// Given a graph G, a list of vertices vs, and a list of index pairs ips,
+// generate a list of the corresponding edges.
+function edge_list(G, vs, ips) {
+	var result = [];
+
+	for (var i = 0; i < ips.length; i++) {
+		var ip = ips[i];
+
+		result.push(G.get_edge(vs[ip[0]], vs[ip[1]]));
+	}
+
+	return result;
+}
+
+function test_prim_jarnik(G, start, mst) {
+	var found_mst;
+	// Make sure we always terminate.
+	var remaining_steps = 1000;
+	var step = G.prim_jarnik(start, function (e) {
+		return e.weight;
+	}, noop, function (t) {
+		remaining_steps = -1;
+		found_mst = t;
+	});
+
+	while (remaining_steps > 0) {
+		step();
+	}
+
+	equal(remaining_steps, -1, 'Exceeded step limit.');
+
+	setEqual(found_mst, mst);
+}
+
+test('prim_jarnik', function () {
+	var G = new Graph(Vertex, Edge);
+
+	var vs1 = G.insert_binary_tree(3);
+	var vs2 = G.insert_binary_tree(3);
+
+	var edge_indices = [[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]];
+	var es1 = edge_list(G, vs1, edge_indices);
+	var es2 = edge_list(G, vs2, edge_indices);
+
+	// Each component has its own MST.
+	test_prim_jarnik(G, vs1[0], es1);
+	test_prim_jarnik(G, vs2[6], es2);
+
+	// If we join them, there is still a unique MST.
+	var bridge1 = G.add_edge(vs1[3], vs2[3]);
+	var es3 = es1.concat(es2, bridge1);
+
+	test_prim_jarnik(G, vs1[0], es3);
+	test_prim_jarnik(G, vs2[6], es3);
+
+	// If we join them with a heavier edge, it won't be used.
+	var bridge2 = G.add_edge(vs1[6], vs2[6]);
+
+	bridge2.heavier();
+
+	test_prim_jarnik(G, vs1[0], es3);
+	test_prim_jarnik(G, vs2[6], es3);
+
+	// But making one of the original edges even heavier will cause the new
+	// bridge to be used.
+	var heavy_edge = G.get_edge(vs1[1], vs1[3]);
+	var es4 = es1.concat(es2, bridge1, bridge2);
+
+	heavy_edge.heavier(2);
+
+	for (var i = 0; i < es4.length; i++) {
+		if (es4[i] == heavy_edge) {
+			es4.splice(i, 1);
+
+			break;
+		}
+	}
+
+	test_prim_jarnik(G, vs1[0], es4);
+	test_prim_jarnik(G, vs2[6], es4);
+});
