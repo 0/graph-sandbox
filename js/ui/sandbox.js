@@ -88,9 +88,9 @@ add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex
 add_toolbox_button('run_dijkstra', "Dijkstra's algorithm", 'j', 'Click initial vertex and drag to target.');
 add_toolbox_button('run_prim_jarnik', "Prim-Jarnik algorithm", 'p', 'Click initial vertex.');
 add_toolbox_spacer();
-add_toolbox_button('insert_binary_tree', 'Insert binary tree', 't', 'Click.');
-add_toolbox_button('insert_complete_graph', 'Insert complete graph', null, 'Click.');
-add_toolbox_button('insert_random_graph', 'Insert random graph', null, 'Click.');
+add_toolbox_button('insert_binary_tree', 'Insert binary tree', '1', 'Click.');
+add_toolbox_button('insert_complete_graph', 'Insert complete graph', '2', 'Click.');
+add_toolbox_button('insert_random_graph', 'Insert random graph', '3', 'Click.');
 
 var extra_instructions_offset = new Point(5, 20);
 
