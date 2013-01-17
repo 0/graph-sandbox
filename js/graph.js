@@ -499,5 +499,88 @@ Graph.prototype = {
 				}
 			}
 		};
+	},
+	kruskal: function (visit_f, end_f) {
+		var clusters = [];
+		var edge_queue = [];
+		var result_vertices = [];
+		var result_edges = [];
+
+		for (var i in this.vertices) {
+			var v = this.vertices[i];
+
+			// Initialize a cluster for each vertex.
+			var c = {};
+
+			c[i] = v;
+			clusters.push(c);
+
+			// All vertices will be in the MSF.
+			result_vertices.push(v);
+		}
+
+		// Fill the edge queue with all edges, in no particular order...
+		for (var i in this.edges) {
+			edge_queue.push(this.edges[i]);
+		}
+
+		// ... and then sort them by weight.
+		edge_queue.sort(function (a, b) {
+			if (a.weight < b.weight) {
+				return -1;
+			} else if (a.weight == b.weight) {
+				return 0;
+			} else {
+				return 1;
+			}
+		});
+
+		// Go through a single step of Kruskal's algorithm.
+		return function () {
+			// Take the first edge in the queue that would join two components.
+			var edge = null;
+			var c1, c2;
+
+			while (edge_queue.length > 0) {
+				var e = edge_queue.shift();
+
+				// Find the clusters containing the edges.
+				for (var i = 0; i < clusters.length; i++) {
+					var c = clusters[i];
+
+					if (e.v1 in c) {
+						c1 = i;
+					}
+
+					if (e.v2 in c) {
+						c2 = i;
+					}
+				}
+
+				if (c1 != c2) {
+					edge = e;
+
+					break;
+				}
+			}
+
+			// The queue is depleted, so the MSF is complete.
+			if (edge === null) {
+				end_f(result_vertices, result_edges);
+
+				return;
+			}
+
+			// Add the found edge to the MSF.
+			result_edges.push(edge);
+			visit_f(edge);
+
+			// Merge the clusters.
+			for (var i in clusters[c1]) {
+				clusters[c2][i] = clusters[c1][i];
+			}
+
+			clusters.splice(c1, 1);
+		};
 	}
 };

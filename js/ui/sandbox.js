@@ -87,6 +87,7 @@ add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex. 
 add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex. Optionally drag to target.');
 add_toolbox_button('run_dijkstra', "Dijkstra's algorithm", 'j', 'Click initial vertex and drag to target.');
 add_toolbox_button('run_prim_jarnik', "Prim-Jarnik algorithm", 'p', 'Click initial vertex.');
+add_toolbox_button('run_kruskal', "Kruskal's algorithm", 'k', 'Click just about anywhere.');
 add_toolbox_spacer();
 add_toolbox_button('insert_binary_tree', 'Insert binary tree', '1', 'Click.');
 add_toolbox_button('insert_complete_graph', 'Insert complete graph', '2', 'Click.');
@@ -136,6 +137,10 @@ tool_cleanup['run_dijkstra'] = function () {
 };
 
 tool_cleanup['run_prim_jarnik'] = function () {
+	G.unhighlight_all();
+};
+
+tool_cleanup['run_kruskal'] = function () {
 	G.unhighlight_all();
 };
 
@@ -1358,6 +1363,24 @@ function onMouseDown(event) {
 				});
 
 				start_search(prim_jarnik_step);
+
+				return;
+
+			case 'run_kruskal':
+				G.unhighlight_all();
+
+				var kruskal_step = G.kruskal(function (e) {
+					e.highlight();
+
+					e.v1.highlight();
+					e.v2.highlight();
+				}, function (vertices, edges) {
+					end_search();
+
+					G.highlight_subgraph(vertices, edges);
+				});
+
+				start_search(kruskal_step);
 
 				return;
 

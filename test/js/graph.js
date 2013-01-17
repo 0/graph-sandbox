@@ -327,11 +327,11 @@ function edge_list(G, vs, ips) {
 	return result;
 }
 
-function test_prim_jarnik(G, start, vertices, edges) {
+function test_spanning(G, f, vertices, edges) {
 	var found_vertices, found_edges;
 	// Make sure we always terminate.
 	var remaining_steps = 1000;
-	var step = G.prim_jarnik(start, noop, function (v, e) {
+	var step = f(function (v, e) {
 		remaining_steps = -1;
 		found_vertices = v;
 		found_edges = e;
@@ -350,6 +350,12 @@ function test_prim_jarnik(G, start, vertices, edges) {
 test('prim_jarnik', function () {
 	var G = new Graph(Vertex, Edge);
 
+	var f = function (start) {
+		return function (end_f) {
+			return G.prim_jarnik(start, noop, end_f);
+		};
+	};
+
 	var vs1 = G.insert_binary_tree(3);
 	var vs2 = G.insert_binary_tree(3);
 	var vs12 = vs1.concat(vs2);
@@ -359,23 +365,23 @@ test('prim_jarnik', function () {
 	var es2 = edge_list(G, vs2, edge_indices);
 
 	// Each component has its own MST.
-	test_prim_jarnik(G, vs1[0], vs1, es1);
-	test_prim_jarnik(G, vs2[6], vs2, es2);
+	test_spanning(G, f(vs1[0]), vs1, es1);
+	test_spanning(G, f(vs2[6]), vs2, es2);
 
 	// If we join them, there is still a unique MST.
 	var bridge1 = G.add_edge(vs1[3], vs2[3]);
 	var es3 = es1.concat(es2, bridge1);
 
-	test_prim_jarnik(G, vs1[0], vs12, es3);
-	test_prim_jarnik(G, vs2[6], vs12, es3);
+	test_spanning(G, f(vs1[0]), vs12, es3);
+	test_spanning(G, f(vs2[6]), vs12, es3);
 
 	// If we join them with a heavier edge, it won't be used.
 	var bridge2 = G.add_edge(vs1[6], vs2[6]);
 
 	bridge2.heavier();
 
-	test_prim_jarnik(G, vs1[0], vs12, es3);
-	test_prim_jarnik(G, vs2[6], vs12, es3);
+	test_spanning(G, f(vs1[0]), vs12, es3);
+	test_spanning(G, f(vs2[6]), vs12, es3);
 
 	// But making one of the original edges even heavier will cause the new
 	// bridge to be used.
@@ -392,11 +398,70 @@ test('prim_jarnik', function () {
 		}
 	}
 
-	test_prim_jarnik(G, vs1[0], vs12, es4);
-	test_prim_jarnik(G, vs2[6], vs12, es4);
+	test_spanning(G, f(vs1[0]), vs12, es4);
+	test_spanning(G, f(vs2[6]), vs12, es4);
 
 	// A component with a single vertex is its own MST.
 	var single = G.add_vertex();
 
-	test_prim_jarnik(G, single, [single], []);
+	test_spanning(G, f(single), [single], []);
+});
+
+test('kruskal', function () {
+	var G = new Graph(Vertex, Edge);
+
+	var f = function (end_f) {
+		return G.kruskal(noop, end_f);
+	};
+
+	var vs1 = G.insert_binary_tree(3);
+	var vs2 = G.insert_binary_tree(3);
+	var vs12 = vs1.concat(vs2);
+
+	var edge_indices = [[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]];
+	var es1 = edge_list(G, vs1, edge_indices);
+	var es2 = edge_list(G, vs2, edge_indices);
+	var es12 = es1.concat(es2);
+
+	// Both components are in the MSF.
+	test_spanning(G, f, vs12, es12);
+
+	// If we join them, there is still a unique MSF.
+	var bridge1 = G.add_edge(vs1[3], vs2[3]);
+	var es3 = es12.concat(bridge1);
+
+	test_spanning(G, f, vs12, es3);
+	test_spanning(G, f, vs12, es3);
+
+	// If we join them with a heavier edge, it won't be used.
+	var bridge2 = G.add_edge(vs1[6], vs2[6]);
+
+	bridge2.heavier();
+
+	test_spanning(G, f, vs12, es3);
+	test_spanning(G, f, vs12, es3);
+
+	// But making one of the original edges even heavier will cause the new
+	// bridge to be used.
+	var heavy_edge = G.get_edge(vs1[1], vs1[3]);
+	var es4 = es3.concat(bridge2);
+
+	heavy_edge.heavier(2);
+
+	for (var i = 0; i < es4.length; i++) {
+		if (es4[i] == heavy_edge) {
+			es4.splice(i, 1);
+
+			break;
+		}
+	}
+
+	test_spanning(G, f, vs12, es4);
+	test_spanning(G, f, vs12, es4);
+
+	// A component with a single vertex is its own MST in the MSF.
+	var single = G.add_vertex();
+	var vs3 = vs12.concat(single);
+
+	test_spanning(G, f, vs3, es4);
 });
