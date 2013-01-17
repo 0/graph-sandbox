@@ -248,6 +248,8 @@ Graph.prototype = {
 		var visited_vertices = {};
 		var vertex_stack = [start];
 
+		var get_edge = bind(this, 'get_edge');
+
 		// Go through a single step of DFS.
 		return function () {
 			// Visit the top-most vertex on the stack.
@@ -265,10 +267,14 @@ Graph.prototype = {
 			var neighbours = current_vertex.list_neighbours();
 
 			for (var i = 0; i < neighbours.length; i++) {
-				if (!(neighbours[i] in visited_vertices)) {
-					neighbour_f(current_vertex, neighbours[i]);
+				var n = neighbours[i];
 
-					vertex_stack.push(neighbours[i]);
+				if (!(n in visited_vertices)) {
+					var e = get_edge(current_vertex, n);
+
+					neighbour_f(n, e);
+
+					vertex_stack.push(n);
 
 					return;
 				}
@@ -278,10 +284,12 @@ Graph.prototype = {
 			vertex_stack.pop();
 
 			if (vertex_stack.length > 0) {
-				backtrack_f(current_vertex, vertex_stack[vertex_stack.length - 1]);
+				var e = get_edge(current_vertex, vertex_stack[vertex_stack.length - 1]);
+
+				backtrack_f(e);
 			} else {
 				// We're done with the search, having found nothing.
-				end_f();
+				end_f([]);
 			}
 		};
 	},
@@ -290,11 +298,13 @@ Graph.prototype = {
 		visited_vertices[start] = true;
 		var vertex_queue = [[start]];
 
+		var get_edge = bind(this, 'get_edge');
+
 		// Go through a single step of BFS.
 		return function () {
 			if (vertex_queue.length == 0) {
 				// We're done with the search, having found nothing.
-				end_f();
+				end_f([]);
 
 				return;
 			}
@@ -315,20 +325,24 @@ Graph.prototype = {
 			var neighbours = current_vertex.list_neighbours();
 
 			for (var i = 0; i < neighbours.length; i++) {
-				if (!(neighbours[i] in visited_vertices)) {
-					neighbour_f(current_vertex, neighbours[i]);
+				var n = neighbours[i];
 
+				if (!(n in visited_vertices)) {
+					var e = get_edge(current_vertex, n);
 					var new_path = current_path.slice(0);
-					new_path.push(neighbours[i]);
+
+					neighbour_f(e);
+
+					new_path.push(n);
 					vertex_queue.push(new_path);
 
 					// Make sure that it doesn't get queued again.
-					visited_vertices[neighbours[i]] = true;
+					visited_vertices[n] = true;
 				}
 			}
 		};
 	},
-	dijkstra: function (start, target, weight_f, distance_f, neighbour_f, visit_f, end_f) {
+	dijkstra: function (start, target, distance_f, neighbour_f, visit_f, end_f) {
 		var distances = {};
 		var previouses = {};
 		var pool = {};
@@ -341,6 +355,8 @@ Graph.prototype = {
 
 		distances[start] = 0;
 		distance_f(start, distances[start]);
+
+		var get_edge = bind(this, 'get_edge');
 
 		// Go through a single step of Dijkstra's algorithm.
 		return function () {
@@ -358,7 +374,7 @@ Graph.prototype = {
 
 			if (min_v === null || distances[min_v] === Infinity) {
 				// Reachable vertices exhausted.
-				end_f();
+				end_f([]);
 
 				return;
 			} else if (min_v === target) {
@@ -390,10 +406,12 @@ Graph.prototype = {
 					continue;
 				}
 
-				neighbour_f(min_v, n);
+				var e = get_edge(min_v, n);
+
+				neighbour_f(e);
 
 				// Update the distance to this neighbour.
-				var new_distance = distances[min_v] + weight_f(min_v, n);
+				var new_distance = distances[min_v] + e.weight;
 
 				if (new_distance < distances[n]) {
 					distances[n] = new_distance;
@@ -404,9 +422,10 @@ Graph.prototype = {
 			}
 		};
 	},
-	prim_jarnik: function (start, weight_f, visit_f, end_f) {
+	prim_jarnik: function (start, visit_f, end_f) {
 		var vertex_pool = {};
 		var edge_pool = {};
+		var result_vertices = [start];
 		var result_edges = [];
 
 		// Start with all vertices except the start vertex in the vertex pool
@@ -436,7 +455,7 @@ Graph.prototype = {
 
 			for (var i in edge_pool) {
 				var e = edge_pool[i];
-				var w = weight_f(e);
+				var w = e.weight;
 
 				if (min_w === null || w < min_w) {
 					min_e = e;
@@ -446,7 +465,7 @@ Graph.prototype = {
 
 			// The pool is depleted, so the MST is complete.
 			if (min_e === null) {
-				end_f(result_edges);
+				end_f(result_vertices, result_edges);
 
 				return;
 			}
@@ -454,6 +473,7 @@ Graph.prototype = {
 			// Add the found edge to the MST, updating the pools.
 			var new_vertex = min_e.v1 in vertex_pool ? min_e.v1 : min_e.v2;
 
+			result_vertices.push(new_vertex);
 			result_edges.push(min_e);
 			visit_f(new_vertex, min_e);
 

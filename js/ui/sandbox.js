@@ -735,6 +735,45 @@ extend_class(Graph, VisualGraph, {
 
 		return this;
 	},
+	// Highlight the given vertices and edges.
+	//
+	// If vertices is null, all the vertices incident to the edges are used. If
+	// edges is null, all the edges between consecutive vertices in the list
+	// are used. If both are null, nothing happens.
+	highlight_subgraph: function (vertices, edges) {
+		if (vertices === null && edges === null) {
+			return;
+		} else if (vertices === null) {
+			// Check every edge, taking both vertices. This list may include
+			// duplicates, but that's not very computationally expensive later.
+			vertices = [];
+
+			for (var i = 0; i < edges.length; i++) {
+				vertices.push(edges[i].v1);
+				vertices.push(edges[i].v2);
+			}
+		} else if (edges === null) {
+			edges = [];
+
+			// Follow the path, extracting edges.
+			for (var i = 1; i < vertices.length; i++) {
+				var e = G.get_edge(vertices[i - 1], vertices[i]);
+
+				// If there is an edge missing, ignore it and keep going.
+				if (e !== null) {
+					edges.push(e);
+				}
+			}
+		}
+
+		for (var i = 0; i < vertices.length; i++) {
+			vertices[i].highlight();
+		}
+
+		for (var i = 0; i < edges.length; i++) {
+			edges[i].highlight('red');
+		}
+	},
 	select_all: function () {
 		for (var i in this.vertices) {
 			this.vertices[i].select();
@@ -899,35 +938,8 @@ function start_search(search_step, cleanup) {
 	}
 }
 
-function end_search(path, type) {
+function end_search() {
 	animation_teardown();
-
-	if (path !== undefined && path.length > 0) {
-		// Show the found path.
-		switch (type) {
-			case 'edges':
-				for (var i = 0; i < path.length; i++) {
-					var e = path[i];
-
-					e.v1.highlight();
-					e.v2.highlight();
-					e.highlight('red');
-				}
-
-				break;
-
-			case 'vertices':
-			default:
-				path[0].highlight();
-
-				for (var i = 1; i < path.length; i++) {
-					path[i].highlight();
-					G.get_edge(path[i - 1], path[i]).highlight('red');
-				}
-
-				break;
-		}
-	}
 }
 
 function onKeyDown(event) {
@@ -1230,14 +1242,18 @@ function onMouseDown(event) {
 
 					G.unhighlight_all();
 
-					var dfs_step = G.dfs(start, target, function (c, n) {
+					var dfs_step = G.dfs(start, target, function (n, e) {
 						// Highlight the next neighbour.
 						n.highlight();
-						G.get_edge(n, c).highlight();
-					}, function (c, p) {
+						e.highlight();
+					}, function (e) {
 						// Unhighlight the edge along which we're backtracking.
-						G.get_edge(c, p).unhighlight();
-					}, end_search);
+						e.unhighlight();
+					}, function (path) {
+						end_search();
+
+						G.highlight_subgraph(path, null);
+					});
 
 					start.highlight();
 
@@ -1262,18 +1278,23 @@ function onMouseDown(event) {
 
 					G.unhighlight_all();
 
-					var bfs_step = G.bfs(start, target, function (c, n) {
-						G.get_edge(c, n).highlight();
-						highlighted_edges.push([c, n]);
+					var bfs_step = G.bfs(start, target, function (e) {
+						e.highlight();
+						highlighted_edges.push(e);
 					}, function (c) {
 						c.highlight();
 
 						// Unhighlight the edge that caused it to be visited.
 						if (highlighted_edges.length > 0) {
-							var edge = highlighted_edges.shift();
-							G.get_edge(edge[0], edge[1]).unhighlight();
+							var e = highlighted_edges.shift();
+
+							e.unhighlight();
 						}
-					}, end_search);
+					}, function (path) {
+						end_search();
+
+						G.highlight_subgraph(path, null);
+					});
 
 					start_search(bfs_step);
 				}, true);
@@ -1297,15 +1318,17 @@ function onMouseDown(event) {
 					// Ensure that all vertices start out blank.
 					G.set_all_vertex_labels(0);
 
-					var dijkstra_step = G.dijkstra(start, target, function (c, n) {
-						return G.get_edge(c, n).weight;
-					}, function (v, d) {
+					var dijkstra_step = G.dijkstra(start, target, function (v, d) {
 						v.set_label(d);
-					}, function (c, n) {
-						G.get_edge(c, n).highlight();
+					}, function (e) {
+						e.highlight();
 					}, function (c) {
 						c.highlight();
-					}, end_search);
+					}, function (path) {
+						end_search();
+
+						G.highlight_subgraph(path, null);
+					});
 
 					start_search(dijkstra_step, function () {
 						// Restore vertex labels.
@@ -1325,13 +1348,13 @@ function onMouseDown(event) {
 				G.unhighlight_all();
 				vertex.highlight();
 
-				var prim_jarnik_step = G.prim_jarnik(vertex, function (e) {
-					return e.weight;
-				}, function (v, e) {
+				var prim_jarnik_step = G.prim_jarnik(vertex, function (v, e) {
 					v.highlight();
 					e.highlight();
-				}, function (path) {
-					end_search(path, 'edges');
+				}, function (vertices, edges) {
+					end_search();
+
+					G.highlight_subgraph(vertices, edges);
 				});
 
 				start_search(prim_jarnik_step);

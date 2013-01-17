@@ -213,7 +213,7 @@ function test_search(f, start, target, success) {
 		equal(found_path[0], start);
 		equal(found_path[found_path.length - 1], target);
 	} else {
-		equal(found_path, undefined);
+		deepEqual(found_path, []);
 	}
 }
 
@@ -275,9 +275,7 @@ function test_dijkstra(G, start, target, path) {
 	var found_path;
 	// Make sure we always terminate.
 	var remaining_steps = 1000;
-	var step = G.dijkstra(start, target, function (c, n) {
-		return G.get_edge(c, n).weight;
-	}, noop, noop, noop, function (p) {
+	var step = G.dijkstra(start, target, noop, noop, noop, function (p) {
 		remaining_steps = -1;
 		found_path = p;
 	});
@@ -301,7 +299,7 @@ test('dijkstra', function () {
 	var short_path = [vs1[0], vs1[7]];
 
 	// No path between components.
-	test_dijkstra(G, vs1[0], vs2[0], undefined);
+	test_dijkstra(G, vs1[0], vs2[0], []);
 
 	// Only a single path possible in a tree.
 	test_dijkstra(G, vs1[0], vs1[7], long_path);
@@ -329,15 +327,14 @@ function edge_list(G, vs, ips) {
 	return result;
 }
 
-function test_prim_jarnik(G, start, mst) {
-	var found_mst;
+function test_prim_jarnik(G, start, vertices, edges) {
+	var found_vertices, found_edges;
 	// Make sure we always terminate.
 	var remaining_steps = 1000;
-	var step = G.prim_jarnik(start, function (e) {
-		return e.weight;
-	}, noop, function (t) {
+	var step = G.prim_jarnik(start, noop, function (v, e) {
 		remaining_steps = -1;
-		found_mst = t;
+		found_vertices = v;
+		found_edges = e;
 	});
 
 	while (remaining_steps > 0) {
@@ -346,7 +343,8 @@ function test_prim_jarnik(G, start, mst) {
 
 	equal(remaining_steps, -1, 'Exceeded step limit.');
 
-	setEqual(found_mst, mst);
+	setEqual(found_vertices, vertices);
+	setEqual(found_edges, edges);
 }
 
 test('prim_jarnik', function () {
@@ -354,29 +352,30 @@ test('prim_jarnik', function () {
 
 	var vs1 = G.insert_binary_tree(3);
 	var vs2 = G.insert_binary_tree(3);
+	var vs12 = vs1.concat(vs2);
 
 	var edge_indices = [[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]];
 	var es1 = edge_list(G, vs1, edge_indices);
 	var es2 = edge_list(G, vs2, edge_indices);
 
 	// Each component has its own MST.
-	test_prim_jarnik(G, vs1[0], es1);
-	test_prim_jarnik(G, vs2[6], es2);
+	test_prim_jarnik(G, vs1[0], vs1, es1);
+	test_prim_jarnik(G, vs2[6], vs2, es2);
 
 	// If we join them, there is still a unique MST.
 	var bridge1 = G.add_edge(vs1[3], vs2[3]);
 	var es3 = es1.concat(es2, bridge1);
 
-	test_prim_jarnik(G, vs1[0], es3);
-	test_prim_jarnik(G, vs2[6], es3);
+	test_prim_jarnik(G, vs1[0], vs12, es3);
+	test_prim_jarnik(G, vs2[6], vs12, es3);
 
 	// If we join them with a heavier edge, it won't be used.
 	var bridge2 = G.add_edge(vs1[6], vs2[6]);
 
 	bridge2.heavier();
 
-	test_prim_jarnik(G, vs1[0], es3);
-	test_prim_jarnik(G, vs2[6], es3);
+	test_prim_jarnik(G, vs1[0], vs12, es3);
+	test_prim_jarnik(G, vs2[6], vs12, es3);
 
 	// But making one of the original edges even heavier will cause the new
 	// bridge to be used.
@@ -393,6 +392,11 @@ test('prim_jarnik', function () {
 		}
 	}
 
-	test_prim_jarnik(G, vs1[0], es4);
-	test_prim_jarnik(G, vs2[6], es4);
+	test_prim_jarnik(G, vs1[0], vs12, es4);
+	test_prim_jarnik(G, vs2[6], vs12, es4);
+
+	// A component with a single vertex is its own MST.
+	var single = G.add_vertex();
+
+	test_prim_jarnik(G, single, [single], []);
 });
