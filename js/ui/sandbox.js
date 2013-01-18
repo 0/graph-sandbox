@@ -978,6 +978,7 @@ function onKeyDown(event) {
 	if (animating) {
 		if (event.key in animation_control_hotkey_actions) {
 			animation_action_dispatch(animation_control_hotkey_actions[event.key]);
+			event.preventDefault();
 
 			return;
 		}
