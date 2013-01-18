@@ -1276,7 +1276,7 @@ function onMouseDown(event) {
 
 				var highlighted_edges = [];
 
-				vertex_pair_action(vertex, '#3377ff', function (start, target) {
+				vertex_pair_action(vertex, '#ffff00', function (start, target) {
 					if (start == target) {
 						target = null;
 					}
@@ -1313,7 +1313,7 @@ function onMouseDown(event) {
 					return;
 				}
 
-				vertex_pair_action(vertex, '#3377ff', function (start, target) {
+				vertex_pair_action(vertex, '#ffff00', function (start, target) {
 					if (start == target) {
 						return;
 					}
