@@ -85,7 +85,7 @@ add_toolbox_button('show_neighbours', 'Neighbours', 'n', 'Hover.');
 add_toolbox_spacer();
 add_toolbox_button('run_dfs', 'Depth-first search', 'z', 'Click initial vertex. Optionally drag to target.');
 add_toolbox_button('run_bfs', 'Breadth-first search', 'x', 'Click initial vertex. Optionally drag to target.');
-add_toolbox_button('run_dijkstra', "Dijkstra's algorithm", 'j', 'Click initial vertex and drag to target.');
+add_toolbox_button('run_dijkstra', "Dijkstra's algorithm", 'j', 'Click initial vertex. Optionally drag to target.');
 add_toolbox_button('run_prim_jarnik', "Prim-Jarnik algorithm", 'p', 'Click initial vertex.');
 add_toolbox_button('run_kruskal', "Kruskal's algorithm", 'k', 'Click just about anywhere.');
 add_toolbox_spacer();
@@ -899,7 +899,7 @@ var release_function;
 
 // Start an edge action at a vertices, draw a path following the mouse, and
 // call the completion callback end_function when the mouse is released.
-function vertex_pair_action(start_vertex, color, end_function, allow_same) {
+function vertex_pair_action(start_vertex, color, end_function, allow_endless) {
 	var path = new Path();
 	path.strokeColor = color;
 	path.add(start_vertex.get_position());
@@ -914,7 +914,7 @@ function vertex_pair_action(start_vertex, color, end_function, allow_same) {
 
 		var end_vertex = G.vertex_at_position(point);
 
-		if (allow_same || end_vertex !== null) {
+		if (end_vertex !== null || allow_endless) {
 			end_function(start_vertex, end_vertex);
 		}
 
@@ -1316,7 +1316,7 @@ function onMouseDown(event) {
 
 				vertex_pair_action(vertex, '#ffff00', function (start, target) {
 					if (start == target) {
-						return;
+						target = null;
 					}
 
 					G.unhighlight_all();
@@ -1340,7 +1340,7 @@ function onMouseDown(event) {
 						// Restore vertex labels.
 						G.set_all_vertex_labels();
 					});
-				}, false);
+				}, true);
 
 				return;
 
