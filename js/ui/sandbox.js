@@ -950,6 +950,15 @@ function end_search() {
 	animation_teardown();
 }
 
+function is_modifier_down(name) {
+	switch (name) {
+		case 'control':
+			return Key.isDown('control') || Key.isDown('command');
+		default:
+			return Key.isDown(name);
+	}
+}
+
 function onKeyDown(event) {
 	if (tools_enabled) {
 		if (event.key in tool_hotkey_actions) {
@@ -958,7 +967,7 @@ function onKeyDown(event) {
 			return;
 		}
 
-		if (Key.isDown('control') || Key.isDown('command')) {
+		if (is_modifier_down('control')) {
 			switch (event.key) {
 				case 'a':
 				// Opera seems to report the resulting control character.
@@ -1030,7 +1039,7 @@ function onMouseMove(event) {
 }
 
 function onMouseDown(event) {
-	if (Key.isDown('control') || Key.isDown('command')) {
+	if (is_modifier_down('control')) {
 		var h_line = new Path.Line(new Point(0, event.point.y), new Point(view.viewSize.width, event.point.y));
 		var v_line = new Path.Line(new Point(event.point.x, 0), new Point(event.point.x, view.viewSize.height));
 
@@ -1039,7 +1048,7 @@ function onMouseDown(event) {
 		var guides = new Group([h_line, v_line]);
 		guides.moveBelow(graph_group);
 
-		if (Key.isDown('shift')) {
+		if (is_modifier_down('shift')) {
 			// Scale/rotate.
 			var root_point = event.point;
 
@@ -1176,7 +1185,7 @@ function onMouseDown(event) {
 				if ('edge' in tool_data) {
 					edge = tool_data['edge'];
 
-					if (Key.isDown('shift')) {
+					if (is_modifier_down('shift')) {
 						edge.lighter();
 					} else {
 						edge.heavier();
@@ -1212,7 +1221,7 @@ function onMouseDown(event) {
 				}
 
 				release_function = function (point) {
-					if (!Key.isDown('shift')) {
+					if (!is_modifier_down('shift')) {
 						G.unselect_all();
 					}
 
