@@ -80,7 +80,7 @@ add_toolbox_button('add_vertex', 'Add vertex', 'v', 'Click.');
 add_toolbox_button('move_vertex', 'Move vertex', 'm', 'Drag a vertex. Selection is moved together.');
 add_toolbox_button('remove_vertex', 'Remove vertex', 'r', 'Click. Selection is removed together.');
 add_toolbox_button('add_edge', 'Add edge', 'e', 'Drag from vertex to vertex.');
-add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Drag from vertex to vertex.');
+add_toolbox_button('delete_edge', 'Delete edge', 'd', 'Click.');
 add_toolbox_button('change_weight', 'Change edge weight', 'w', 'Click (with shift) to make heavier (lighter).');
 add_toolbox_spacer();
 add_toolbox_button('select', 'Select', 's', 'Click or drag. Hold shift to toggle (click) or add (drag).');
@@ -112,6 +112,16 @@ add_extra_instructions('[del]: remove selection');
 add_extra_instructions('[ctrl/apple + A]: select all');
 add_extra_instructions('(ctrl/apple + drag) to pan');
 add_extra_instructions('(ctrl/apple + shift + drag) to scale/rotate');
+
+tool_setup['delete_edge'] = function () {
+	tool.minDistance = 2;
+};
+
+tool_cleanup['delete_edge'] = function () {
+	tool.minDistance = default_minDistance;
+
+	G.unhighlight_all();
+};
 
 tool_setup['change_weight'] = function () {
 	tool.minDistance = 2;
@@ -1003,6 +1013,7 @@ function onMouseMove(event) {
 	}
 
 	switch (current_tool) {
+		case 'delete_edge':
 		case 'change_weight':
 			var edge = G.edge_at_position(event.point);
 
@@ -1174,16 +1185,16 @@ function onMouseDown(event) {
 				return;
 
 			case 'delete_edge':
-				var vertex = G.vertex_at_position(event.point);
+				if ('edge' in tool_data) {
+					var e = tool_data['edge'];
 
-				if (vertex !== null) {
-					vertex_pair_action(vertex, '#ff0000', bind(G, 'remove_edge'), false);
+					G.remove_edge(e.v1, e.v2);
 				}
 				return;
 
 			case 'change_weight':
 				if ('edge' in tool_data) {
-					edge = tool_data['edge'];
+					var edge = tool_data['edge'];
 
 					if (is_modifier_down('shift')) {
 						edge.lighter();
