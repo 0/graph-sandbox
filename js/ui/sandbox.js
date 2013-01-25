@@ -35,7 +35,10 @@ var tool_setup = {};
 var tool_data = {};
 var tool_cleanup = {};
 
+toolbox_layer.activate();
 var tool_help_text = new PointText(toolbox_button_posn + new Point(button_size.width + 10, 15));
+default_layer.activate();
+
 tool_help_text.characterStyle.fillColor = 'white';
 
 function make_button(label, hotkey, posn) {
