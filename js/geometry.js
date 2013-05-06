@@ -1,7 +1,7 @@
+// A "point" object is an object with x and y properties.
+
 // Find the square of the minimum distance from the point p1 to the point p2.
-//
-// Each of the arguments should be an object with x and y properties.
-function distanceToPoint(p1, p2) {
+function distance_to_point(p1, p2) {
 	var dx = p2.x - p1.x;
 	var dy = p2.y - p1.y;
 
@@ -10,12 +10,10 @@ function distanceToPoint(p1, p2) {
 
 // Find the square of the minimum distance from the point p to the line segment
 // with endpoints s1 and s2.
-//
-// Each of the arguments should be an object with x and y properties.
-function distanceToLineSegment(s1, s2, p) {
+function distance_to_line_segment(s1, s2, p) {
 	if (s1.x == s2.x && s1.y == s2.y) {
 		// Point.
-		return distanceToPoint(s1, p);
+		return distance_to_point(s1, p);
 	} else if (s1.y == s2.y) {
 		// Horizontal.
 		var left, right;
@@ -35,10 +33,10 @@ function distanceToLineSegment(s1, s2, p) {
 			return dy * dy;
 		} else if (p.x < left.x) {
 			// Point is to the left.
-			return distanceToPoint(left, p);
+			return distance_to_point(left, p);
 		} else {
 			// Point is to the right.
-			return distanceToPoint(right, p);
+			return distance_to_point(right, p);
 		}
 	} else if (s1.x == s2.x) {
 		// Vertical.
@@ -59,10 +57,10 @@ function distanceToLineSegment(s1, s2, p) {
 			return dx * dx;
 		} else if (p.y < up.y) {
 			// Point is above.
-			return distanceToPoint(up, p);
+			return distance_to_point(up, p);
 		} else {
 			// Point is below.
-			return distanceToPoint(down, p);
+			return distance_to_point(down, p);
 		}
 	} else {
 		// Arbitary slope.
@@ -96,10 +94,10 @@ function distanceToLineSegment(s1, s2, p) {
 			return (k * k) / (m * m + 1);
 		} else if (p.y < y1) {
 			// Point is above.
-			return distanceToPoint(min, p);
+			return distance_to_point(min, p);
 		} else {
 			// Point is below.
-			return distanceToPoint(max, p);
+			return distance_to_point(max, p);
 		}
 	}
 }

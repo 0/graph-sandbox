@@ -732,7 +732,7 @@ extend_class(Graph, VisualGraph, {
 
 		for (var i in this.edges) {
 			var edge = this.edges[i];
-			var d = distanceToLineSegment(edge.v1.get_position(), edge.v2.get_position(), point);
+			var d = distance_to_line_segment(edge.v1.get_position(), edge.v2.get_position(), point);
 
 			if (min_d === null || d < min_d) {
 				min_edge = edge;

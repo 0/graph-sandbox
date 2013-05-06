@@ -11,13 +11,13 @@ function Point(xy, invert) {
 var tolerance = 1e-3;
 
 function run_dtp_test(p1, p2, d) {
-	var result = distanceToPoint(new Point(p1), new Point(p2));
+	var result = distance_to_point(new Point(p1), new Point(p2));
 	var diff = Math.abs(result - d);
 
 	ok(diff < tolerance, d + ':' + result);
 }
 
-test('distanceToPoint', function () {
+test('distance_to_point', function () {
 	run_dtp_test([2, 2], [2, 2], 0);
 	run_dtp_test([2, 2], [2, 1], 1);
 	run_dtp_test([2, 2], [1, 2], 1);
@@ -30,7 +30,7 @@ function _run_dtls_test(s1, s2, p, d, invert) {
 	var s2p = new Point(s2, invert);
 	var pp = new Point(p, invert);
 
-	var result = distanceToLineSegment(s1p, s2p, pp);
+	var result = distance_to_line_segment(s1p, s2p, pp);
 	var diff = Math.abs(result - d);
 
 	ok(diff < tolerance, d + ':' + result + ' (' + (invert ? '' : 'non-') + 'inverted)');
@@ -41,7 +41,7 @@ function run_dtls_test(s1, s2, p, d) {
 	_run_dtls_test(s1, s2, p, d, true);
 }
 
-test('distanceToLineSegment', function () {
+test('distance_to_line_segment', function () {
 	// Line segment is a point.
 	run_dtls_test([2, 2], [2, 2], [2, 2], 0);
 	run_dtls_test([2, 2], [2, 2], [2, 3], 1);
