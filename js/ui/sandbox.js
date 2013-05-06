@@ -760,7 +760,7 @@ extend_class(Graph, VisualGraph, {
 	// are used. If both are null, nothing happens.
 	highlight_subgraph: function (vertices, edges) {
 		if (vertices === null && edges === null) {
-			return;
+			return this;
 		} else if (vertices === null) {
 			// Check every edge, taking both vertices. This list may include
 			// duplicates, but that's not very computationally expensive later.
@@ -791,6 +791,8 @@ extend_class(Graph, VisualGraph, {
 		for (var i = 0; i < edges.length; i++) {
 			edges[i].highlight('red');
 		}
+
+		return this;
 	},
 	select_all: function () {
 		for (var i in this.vertices) {
