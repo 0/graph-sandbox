@@ -1017,9 +1017,11 @@ function onMouseMove(event) {
 	switch (current_tool) {
 		case 'delete_edge':
 		case 'change_weight':
-			var edge = G.edge_at_position(event.point);
+			if ('edge' in tool_data) {
+				tool_data['edge'].unhighlight();
+			}
 
-			G.unhighlight_all();
+			var edge = G.edge_at_position(event.point);
 
 			if (edge === null) {
 				delete tool_data['edge'];
